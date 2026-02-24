@@ -5,10 +5,11 @@ interface IndustrialButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEle
   variant?: 'primary' | 'secondary' | 'danger' | 'success';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   icon?: React.ReactNode;
+  fullWidth?: boolean;
 }
 
 export const IndustrialButton = React.forwardRef<HTMLButtonElement, IndustrialButtonProps>(
-  ({ variant = 'primary', size = 'md', icon, className, children, ...props }, ref) => {
+  ({ variant = 'primary', size = 'md', icon, fullWidth = false, className, children, ...props }, ref) => {
     const baseStyles = 'font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-95';
 
     const variantStyles = {
@@ -28,7 +29,7 @@ export const IndustrialButton = React.forwardRef<HTMLButtonElement, IndustrialBu
     return (
       <button
         ref={ref}
-        className={cn(baseStyles, variantStyles[variant], sizeStyles[size], className)}
+        className={cn(baseStyles, variantStyles[variant], sizeStyles[size], fullWidth && 'w-full', className)}
         {...props}
       >
         {icon}

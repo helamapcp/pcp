@@ -4,19 +4,19 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { BigBagInventoryProvider } from "./contexts/BigBagInventoryContext";
-import Login from "./pages/Login";
-import BigBagOperatorDashboard from "./pages/BigBagOperatorDashboard";
-import BigBagManagerDashboard from "./pages/BigBagManagerDashboard";
+import { PVCInventoryProvider } from "./contexts/PVCInventoryContext";
+import PVCLogin from "./pages/PVCLogin";
+import PVCOperatorDashboard from "./pages/PVCOperatorDashboard";
+import PVCManagerDashboard from "./pages/PVCManagerDashboard";
 
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Login} />
-      <Route path="/login" component={Login} />
-      <Route path="/operator" component={BigBagOperatorDashboard} />
-      <Route path="/manager" component={BigBagManagerDashboard} />
+      <Route path="/" component={PVCLogin} />
+      <Route path="/pvc-login" component={PVCLogin} />
+      <Route path="/pvc-operator" component={PVCOperatorDashboard} />
+      <Route path="/pvc-manager" component={PVCManagerDashboard} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -36,12 +36,12 @@ function App() {
         defaultTheme="light"
         // switchable
       >
-        <BigBagInventoryProvider>
+        <PVCInventoryProvider>
           <TooltipProvider>
             <Toaster />
             <Router />
           </TooltipProvider>
-        </BigBagInventoryProvider>
+        </PVCInventoryProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
