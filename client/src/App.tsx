@@ -4,10 +4,10 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { InventoryProvider } from "./contexts/InventoryContext";
+import { BigBagInventoryProvider } from "./contexts/BigBagInventoryContext";
 import Login from "./pages/Login";
-import OperatorDashboard from "./pages/OperatorDashboard";
-import ManagerDashboard from "./pages/ManagerDashboard";
+import BigBagOperatorDashboard from "./pages/BigBagOperatorDashboard";
+import BigBagManagerDashboard from "./pages/BigBagManagerDashboard";
 
 
 function Router() {
@@ -15,8 +15,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Login} />
       <Route path="/login" component={Login} />
-      <Route path="/operator" component={OperatorDashboard} />
-      <Route path="/manager" component={ManagerDashboard} />
+      <Route path="/operator" component={BigBagOperatorDashboard} />
+      <Route path="/manager" component={BigBagManagerDashboard} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -36,12 +36,12 @@ function App() {
         defaultTheme="light"
         // switchable
       >
-        <InventoryProvider>
+        <BigBagInventoryProvider>
           <TooltipProvider>
             <Toaster />
             <Router />
           </TooltipProvider>
-        </InventoryProvider>
+        </BigBagInventoryProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
