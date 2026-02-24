@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useEstoque } from '@/contexts/EstoqueContext';
 import { useUserManagement } from '@/contexts/UserManagementContext';
-import { LogOut } from 'lucide-react';
+import { LogOut, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { IndustrialButton } from '@/components/IndustrialButton';
 import { ProductCategoryAccordionGeneric } from '@/components/ProductCategoryAccordionGeneric';
@@ -22,18 +22,21 @@ export default function EstoqueOperatorPage() {
     setCurrentUser(null);
     setLocation('/login');
   };
+
   const [activeTab, setActiveTab] = useState<'estoque' | 'entrada' | 'movimentacao' | 'separacao'>('estoque');
   const [selectedSector, setSelectedSector] = useState<Sector>('CD');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCountModal, setShowCountModal] = useState(false);
   const [showInboundModal, setShowInboundModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
 
   if (!currentUser) {
     setLocation('/login');
     return null;
   }
 
+  const operatorName = currentUser.name;
   const categories = getAllCategories();
   const pendingSeparations = getPendingSeparations();
 
@@ -54,58 +57,76 @@ export default function EstoqueOperatorPage() {
 
   const handleCountSubmit = (quantity: number, unit: 'units' | 'kg') => {
     if (!selectedProduct) return;
-
-    recordStockCount(selectedProduct.id, selectedSector, quantity, unit, 'Operador');
-
+    recordStockCount(selectedProduct.id, selectedSector, quantity, unit, operatorName);
     toast.success(
       `✓ Estoque Registrado\n${selectedProduct.name}\n${selectedSector}: ${quantity} ${unit === 'units' ? 'sacos' : 'kg'}`,
       { duration: 4000 }
     );
-
     setShowCountModal(false);
     setSelectedProduct(null);
   };
 
   const handleInboundSubmit = (quantity: number, unit: 'units' | 'kg') => {
     if (!selectedProduct) return;
-
-    recordInboundReceiving(selectedProduct.id, quantity, unit, 'Operador');
-
+    recordInboundReceiving(selectedProduct.id, quantity, unit, operatorName);
     toast.success(
       `✓ Entrada Registrada\n${selectedProduct.name}\n${quantity} ${unit === 'units' ? 'sacos' : 'kg'}`,
       { duration: 4000 }
     );
-
     setShowInboundModal(false);
     setSelectedProduct(null);
   };
 
   const handleTransferSubmit = (quantity: number, from: Sector, to: Sector) => {
     if (!selectedProduct) return;
-
-    recordTransfer(selectedProduct.id, quantity, from, to, 'Operador');
-
+    recordTransfer(selectedProduct.id, quantity, from, to, operatorName);
     toast.success(
       `✓ Transferência Registrada\n${selectedProduct.name}\n${from} → ${to}\n${quantity} sacos`,
       { duration: 4000 }
     );
-
     setShowTransferModal(false);
     setSelectedProduct(null);
   };
 
+  const handleCompleteSeparation = (separationId: string) => {
+    completeSeparation(separationId, operatorName);
+    setCompletedIds(prev => new Set(prev).add(separationId));
+    const sep = pendingSeparations.find(s => s.id === separationId);
+    if (sep) {
+      toast.success(
+        `✓ Separação Confirmada\n${sep.productName}\n${sep.from} → ${sep.to}\n${sep.quantity} sacos`,
+        { duration: 3000 }
+      );
+    }
+    // Remove from completed set after animation
+    setTimeout(() => {
+      setCompletedIds(prev => {
+        const next = new Set(prev);
+        next.delete(separationId);
+        return next;
+      });
+    }, 600);
+  };
+
+  const tabConfig = [
+    { id: 'estoque' as const, label: '📦 Estoque', color: 'text-primary border-primary' },
+    { id: 'entrada' as const, label: '📥 Entrada CD', color: 'text-industrial-success border-industrial-success' },
+    { id: 'movimentacao' as const, label: '🔄 Movimentação', color: 'text-chart-4 border-chart-4' },
+    { id: 'separacao' as const, label: `📋 Separação (${pendingSeparations.length})`, color: 'text-industrial-warning border-industrial-warning' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-slate-800/50 border-b-2 border-slate-700 sticky top-0 z-10 p-4">
+      <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-black text-white">📱 Operador</h1>
-            <p className="text-slate-300 text-sm">{currentUser.name} • Estoque & Movimentação</p>
+            <h1 className="text-2xl md:text-3xl font-black text-foreground">📱 Operador</h1>
+            <p className="text-muted-foreground text-sm">{operatorName} • Estoque & Movimentação</p>
           </div>
           <button
             onClick={handleLogout}
-            className="p-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg transition-colors"
+            className="p-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors touch-target"
             title="Sair"
           >
             <LogOut className="w-6 h-6" />
@@ -114,71 +135,44 @@ export default function EstoqueOperatorPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b-2 border-slate-700 bg-slate-800/30 px-4 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('estoque')}
-          className={`px-4 py-3 font-bold transition-colors whitespace-nowrap ${
-            activeTab === 'estoque'
-              ? 'text-blue-400 border-b-3 border-blue-400'
-              : 'text-slate-400 hover:text-slate-300'
-          }`}
-        >
-          📦 Estoque
-        </button>
-        <button
-          onClick={() => setActiveTab('entrada')}
-          className={`px-4 py-3 font-bold transition-colors whitespace-nowrap ${
-            activeTab === 'entrada'
-              ? 'text-green-400 border-b-3 border-green-400'
-              : 'text-slate-400 hover:text-slate-300'
-          }`}
-        >
-          📥 Entrada CD
-        </button>
-        <button
-          onClick={() => setActiveTab('movimentacao')}
-          className={`px-4 py-3 font-bold transition-colors whitespace-nowrap ${
-            activeTab === 'movimentacao'
-              ? 'text-purple-400 border-b-3 border-purple-400'
-              : 'text-slate-400 hover:text-slate-300'
-          }`}
-        >
-          🔄 Movimentação
-        </button>
-        <button
-          onClick={() => setActiveTab('separacao')}
-          className={`px-4 py-3 font-bold transition-colors whitespace-nowrap ${
-            activeTab === 'separacao'
-              ? 'text-yellow-400 border-b-3 border-yellow-400'
-              : 'text-slate-400 hover:text-slate-300'
-          }`}
-        >
-          📋 Separação ({pendingSeparations.length})
-        </button>
+      <div className="flex border-b-2 border-border bg-card/50 px-2 overflow-x-auto">
+        {tabConfig.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-3 font-bold transition-colors whitespace-nowrap touch-target text-sm ${
+              activeTab === tab.id
+                ? tab.color + ' border-b-3'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
         {activeTab === 'estoque' && (
           <div className="space-y-4">
-            <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-4 mb-4">
-              <p className="text-slate-300 text-sm">
-                💡 <span className="font-semibold">Estoque:</span> Registre a quantidade atual em cada setor. O sistema calculará automaticamente a movimentação.
+            <div className="bg-card border-2 border-border rounded-lg p-4 mb-4">
+              <p className="text-muted-foreground text-sm">
+                💡 <span className="font-semibold text-foreground">Estoque:</span> Registre a quantidade atual em cada setor. O sistema calculará automaticamente a movimentação (delta).
               </p>
             </div>
 
             {/* Sector Selection */}
             <div>
-              <label className="block text-white text-base font-bold mb-3">Selecione o Setor</label>
+              <label className="block text-foreground text-base font-bold mb-3">Selecione o Setor</label>
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {SECTORS.map(sector => (
                   <button
                     key={sector}
                     onClick={() => setSelectedSector(sector)}
-                    className={`px-4 py-3 rounded-lg font-bold transition-all border-2 min-h-[48px] ${
+                    className={`px-4 py-3 rounded-lg font-bold transition-all border-2 touch-target ${
                       selectedSector === sector
-                        ? 'bg-blue-600 text-white border-blue-500 hover:bg-blue-700'
-                        : 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600'
+                        ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90'
+                        : 'bg-card text-secondary-foreground border-border hover:bg-secondary'
                     }`}
                   >
                     {sector}
@@ -187,7 +181,7 @@ export default function EstoqueOperatorPage() {
               </div>
             </div>
 
-            <h2 className="text-white font-bold text-lg">Selecione um Produto</h2>
+            <h2 className="text-foreground font-bold text-lg">Selecione um Produto</h2>
             <ProductCategoryAccordionGeneric
               categories={categories}
               products={products}
@@ -198,13 +192,13 @@ export default function EstoqueOperatorPage() {
 
         {activeTab === 'entrada' && (
           <div className="space-y-4">
-            <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-4 mb-4">
-              <p className="text-slate-300 text-sm">
-                💡 <span className="font-semibold">Entrada no CD:</span> Registre novos recebimentos de fornecedores. O estoque do CD será aumentado automaticamente.
+            <div className="bg-card border-2 border-border rounded-lg p-4 mb-4">
+              <p className="text-muted-foreground text-sm">
+                💡 <span className="font-semibold text-foreground">Entrada no CD:</span> Registre novos recebimentos. O estoque do CD será aumentado automaticamente.
               </p>
             </div>
 
-            <h2 className="text-white font-bold text-lg">Selecione um Produto</h2>
+            <h2 className="text-foreground font-bold text-lg">Selecione um Produto</h2>
             <ProductCategoryAccordionGeneric
               categories={categories}
               products={products}
@@ -215,13 +209,13 @@ export default function EstoqueOperatorPage() {
 
         {activeTab === 'movimentacao' && (
           <div className="space-y-4">
-            <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-4 mb-4">
-              <p className="text-slate-300 text-sm">
-                💡 <span className="font-semibold">Movimentação:</span> Registre transferências de material entre setores (CD, Fábrica, PMP, PCP).
+            <div className="bg-card border-2 border-border rounded-lg p-4 mb-4">
+              <p className="text-muted-foreground text-sm">
+                💡 <span className="font-semibold text-foreground">Movimentação:</span> Registre transferências entre setores (CD → PCP → PMP → Fábrica).
               </p>
             </div>
 
-            <h2 className="text-white font-bold text-lg">Selecione um Produto</h2>
+            <h2 className="text-foreground font-bold text-lg">Selecione um Produto</h2>
             <ProductCategoryAccordionGeneric
               categories={categories}
               products={products}
@@ -232,40 +226,43 @@ export default function EstoqueOperatorPage() {
 
         {activeTab === 'separacao' && (
           <div className="space-y-4">
-            <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-4 mb-4">
-              <p className="text-slate-300 text-sm">
-                💡 <span className="font-semibold">Separação:</span> Use esta aba como checklist durante o picking. Confirme cada transferência após preparar o material.
+            <div className="bg-card border-2 border-border rounded-lg p-4 mb-4">
+              <p className="text-muted-foreground text-sm">
+                💡 <span className="font-semibold text-foreground">Separação:</span> Confirme cada transferência após preparar o material fisicamente.
               </p>
             </div>
 
             {pendingSeparations.length === 0 ? (
-              <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-12 text-center">
-                <p className="text-slate-400 text-lg">✓ Nenhuma separação pendente</p>
-                <p className="text-slate-500 text-sm mt-2">Todas as transferências foram confirmadas!</p>
+              <div className="bg-card border-2 border-border rounded-lg p-12 text-center">
+                <div className="text-4xl mb-3">✅</div>
+                <p className="text-foreground text-lg font-bold">Nenhuma separação pendente</p>
+                <p className="text-muted-foreground text-sm mt-2">Todas as transferências foram confirmadas!</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {pendingSeparations.map((separation) => (
                   <div
                     key={separation.id}
-                    className="bg-slate-700/50 border-3 border-yellow-500 rounded-lg p-5 hover:bg-slate-700/70 transition-colors"
+                    className={`bg-card border-3 border-industrial-warning rounded-lg p-5 transition-all ${
+                      completedIds.has(separation.id) ? 'animate-slide-out' : ''
+                    }`}
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <p className="text-white font-bold text-lg">{separation.productName}</p>
-                        <p className="text-slate-300 text-sm mt-1">
-                          {separation.from} <span className="text-yellow-400">→</span> {separation.to}
+                        <p className="text-foreground font-bold text-lg">{separation.productName}</p>
+                        <p className="text-muted-foreground text-sm mt-1">
+                          {separation.from} <span className="text-industrial-warning font-bold">→</span> {separation.to}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-white font-black text-2xl">{separation.quantity}</p>
-                        <p className="text-slate-400 text-xs">sacos</p>
+                        <p className="text-foreground font-black text-2xl">{separation.quantity}</p>
+                        <p className="text-muted-foreground text-xs">sacos</p>
                       </div>
                     </div>
 
-                    <div className="bg-slate-800/50 rounded-lg p-3 mb-4">
-                      <p className="text-slate-300 text-xs font-bold mb-2">INSTRUÇÕES:</p>
-                      <p className="text-slate-300 text-sm">
+                    <div className="bg-secondary rounded-lg p-3 mb-4">
+                      <p className="text-muted-foreground text-xs font-bold mb-2">INSTRUÇÕES:</p>
+                      <p className="text-secondary-foreground text-sm">
                         Localize e prepare {separation.quantity} saco(s) de <span className="font-bold">{separation.productName}</span> para transferência.
                       </p>
                     </div>
@@ -273,13 +270,8 @@ export default function EstoqueOperatorPage() {
                     <IndustrialButton
                       size="lg"
                       variant="success"
-                      onClick={() => {
-                        completeSeparation(separation.id, 'Operador');
-                        toast.success(
-                          `✓ Separação Confirmada\n${separation.productName}\n${separation.from} → ${separation.to}\n${separation.quantity} sacos`,
-                          { duration: 3000 }
-                        );
-                      }}
+                      onClick={() => handleCompleteSeparation(separation.id)}
+                      icon={<Check className="w-6 h-6" />}
                       fullWidth
                     >
                       ✓ Confirmar Separação
