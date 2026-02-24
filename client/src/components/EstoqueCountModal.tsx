@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, AlertTriangle } from 'lucide-react';
 import { IndustrialButton } from './IndustrialButton';
 import { toast } from 'sonner';
 import type { Product, Sector } from '@/contexts/EstoqueContext';
@@ -22,27 +22,41 @@ export function EstoqueCountModal({
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState<'units' | 'kg'>('units');
   const [error, setError] = useState('');
+  const [showExtremeWarning, setShowExtremeWarning] = useState(false);
+
+  const EXTREME_THRESHOLD_UNITS = 500;
+  const EXTREME_THRESHOLD_KG = 50000;
 
   if (!isOpen || !product || !sector) return null;
 
   const handleKeypad = (digit: string) => {
     if (quantity.length < 8) {
       setQuantity(quantity + digit);
+      setShowExtremeWarning(false);
     }
   };
 
   const handleBackspace = () => {
     setQuantity(quantity.slice(0, -1));
+    setShowExtremeWarning(false);
   };
 
   const handleSubmit = () => {
-    if (!quantity || parseInt(quantity) < 0) {
+    const qty = parseInt(quantity);
+    if (!quantity || qty < 0) {
       setError('Quantidade deve ser válida');
       return;
     }
 
+    const threshold = unit === 'units' ? EXTREME_THRESHOLD_UNITS : EXTREME_THRESHOLD_KG;
+    if (qty >= threshold && !showExtremeWarning) {
+      setShowExtremeWarning(true);
+      return;
+    }
+
     setError('');
-    onSubmit(parseInt(quantity), unit);
+    setShowExtremeWarning(false);
+    onSubmit(qty, unit);
     setQuantity('');
     setUnit('units');
   };
@@ -134,6 +148,21 @@ export function EstoqueCountModal({
               </button>
             </div>
           </div>
+
+          {/* Extreme Value Warning */}
+          {showExtremeWarning && (
+            <div className="bg-yellow-900/60 border-2 border-yellow-500 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-yellow-300 text-sm font-bold mb-1">⚠️ Valor muito alto!</p>
+                  <p className="text-yellow-200 text-xs">
+                    Você digitou <span className="font-black">{quantity}</span> {unit === 'units' ? 'sacos' : 'kg'}. Tem certeza? Clique "Registrar" novamente.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
