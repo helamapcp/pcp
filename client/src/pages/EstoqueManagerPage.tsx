@@ -10,10 +10,11 @@ const SECTORS: Sector[] = ['CD', 'Fábrica', 'PMP', 'PCP'];
 
 export default function EstoqueManagerPage() {
   const [, setLocation] = useLocation();
-  const { products, stockCounts, movements, transfers, inboundReceivings, unitWeights, updateUnitWeight, getSectorTotalKg, getTodayMovements, getTodayTransfers, getTodayInboundReceivings } = useEstoque();
+  const { products, stockCounts, movements, transfers, inboundReceivings, unitWeights, updateUnitWeight, getSectorTotalKg, getTodayMovements, getTodayTransfers, getTodayInboundReceivings, getProductTotalKgAllSectors } = useEstoque();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'settings' | 'movements' | 'transfers' | 'inbound'>('dashboard');
   const [editingWeights, setEditingWeights] = useState<Record<string, number>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [selectedProductFilter, setSelectedProductFilter] = useState<string | null>(null);
 
   useEffect(() => {
     const initialWeights: Record<string, number> = {};
@@ -45,6 +46,29 @@ export default function EstoqueManagerPage() {
   const todayMovements = getTodayMovements();
   const todayTransfers = getTodayTransfers();
   const todayInbounds = getTodayInboundReceivings();
+
+  const getFilteredKPIMetrics = () => {
+    if (!selectedProductFilter) {
+      return {
+        totalProducts: products.length,
+        totalMovements: todayMovements.length,
+        totalTransfers: todayTransfers.length,
+        totalInbounds: todayInbounds.length,
+      };
+    }
+
+    const product = products.find(p => p.id === selectedProductFilter);
+    if (!product) return { totalProducts: 0, totalMovements: 0, totalTransfers: 0, totalInbounds: 0 };
+
+    return {
+      totalProducts: 1,
+      totalMovements: todayMovements.filter(m => m.productId === selectedProductFilter).length,
+      totalTransfers: todayTransfers.filter(t => t.productId === selectedProductFilter).length,
+      totalInbounds: todayInbounds.filter(i => i.productId === selectedProductFilter).length,
+    };
+  };
+
+  const filteredMetrics = getFilteredKPIMetrics();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
@@ -90,10 +114,32 @@ export default function EstoqueManagerPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
+            {/* Product Filter */}
+            <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-4">
+              <label className="block text-white text-sm font-bold mb-3">Filtrar por Produto</label>
+              <select
+                value={selectedProductFilter || ''}
+                onChange={(e) => setSelectedProductFilter(e.target.value || null)}
+                className="w-full px-4 py-2 bg-slate-800 border-2 border-slate-600 rounded-lg text-white font-semibold"
+              >
+                <option value="">Todos os Produtos</option>
+                {products.map(product => (
+                  <option key={product.id} value={product.id}>{product.name}</option>
+                ))}
+              </select>
+            </div>
+
             {/* KPI Cards by Sector */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {SECTORS.map(sector => {
-                const totalKg = getSectorTotalKg(sector);
+                let totalKg = getSectorTotalKg(sector);
+                if (selectedProductFilter) {
+                  const product = products.find(p => p.id === selectedProductFilter);
+                  if (product) {
+                    const count = stockCounts.find(s => s.productId === selectedProductFilter && s.sector === sector);
+                    totalKg = count?.totalKg || 0;
+                  }
+                }
                 return (
                   <div key={sector} className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-6">
                     <p className="text-slate-300 text-xs font-bold mb-2">{sector}</p>
@@ -110,22 +156,22 @@ export default function EstoqueManagerPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-6">
                 <p className="text-slate-300 text-xs font-bold mb-2">PRODUTOS</p>
-                <p className="text-white text-3xl font-black">{products.length}</p>
+                <p className="text-white text-3xl font-black">{filteredMetrics.totalProducts}</p>
               </div>
 
               <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-6">
                 <p className="text-slate-300 text-xs font-bold mb-2">MOVIMENTOS HOJE</p>
-                <p className="text-white text-3xl font-black">{todayMovements.length}</p>
+                <p className="text-white text-3xl font-black">{filteredMetrics.totalMovements}</p>
               </div>
 
               <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-6">
                 <p className="text-slate-300 text-xs font-bold mb-2">TRANSFERÊNCIAS</p>
-                <p className="text-white text-3xl font-black">{todayTransfers.length}</p>
+                <p className="text-white text-3xl font-black">{filteredMetrics.totalTransfers}</p>
               </div>
 
               <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-6">
                 <p className="text-slate-300 text-xs font-bold mb-2">ENTRADAS</p>
-                <p className="text-white text-3xl font-black">{todayInbounds.length}</p>
+                <p className="text-white text-3xl font-black">{filteredMetrics.totalInbounds}</p>
               </div>
             </div>
 
@@ -142,6 +188,7 @@ export default function EstoqueManagerPage() {
                       {SECTORS.map(sector => (
                         <th key={sector} className="px-4 py-3 text-right text-white font-bold">{sector}</th>
                       ))}
+                      <th className="px-4 py-3 text-right text-white font-bold text-green-400">Total do Produto</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-600">
@@ -156,6 +203,9 @@ export default function EstoqueManagerPage() {
                             </td>
                           );
                         })}
+                        <td className="px-4 py-3 text-right text-green-300 font-black">
+                          {getProductTotalKgAllSectors(product.id)}kg
+                        </td>
                       </tr>
                     ))}
                   </tbody>

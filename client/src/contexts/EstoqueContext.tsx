@@ -53,6 +53,20 @@ export interface Transfer {
   operator: string;
 }
 
+export interface Separation {
+  id: string;
+  transferId: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  from: Sector;
+  to: Sector;
+  status: 'pending' | 'completed';
+  createdAt: string;
+  completedAt?: string;
+  operator?: string;
+}
+
 export interface InboundReceiving {
   id: string;
   productId: string;
@@ -77,6 +91,7 @@ interface EstoqueContextType {
   recordInboundReceiving: (productId: string, quantity: number, unit: 'units' | 'kg', supplier: string, operator: string) => void;
   updateUnitWeight: (productId: string, unitWeight: number) => void;
   recordTransfer: (productId: string, quantity: number, from: Sector, to: Sector, operator: string) => void;
+  completeSeparation: (separationId: string, operator: string) => void;
   
   getProductsByCategory: (category: string) => Product[];
   getAllCategories: () => string[];
@@ -87,6 +102,8 @@ interface EstoqueContextType {
   getTodayInboundReceivings: () => InboundReceiving[];
   getSectorTotalKg: (sector: Sector) => number;
   getProductTotalKgBySector: (productId: string, sector: Sector) => number;
+  getPendingSeparations: () => Separation[];
+  getProductTotalKgAllSectors: (productId: string) => number;
 }
 
 const EstoqueContext = createContext<EstoqueContextType | undefined>(undefined);
@@ -136,6 +153,7 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [inboundReceivings, setInboundReceivings] = useState<InboundReceiving[]>([]);
+  const [separations, setSeparations] = useState<Separation[]>([]);
   const [unitWeights, setUnitWeights] = useState<UnitWeightConfig[]>(
     PRODUCTS.map(p => ({
       productId: p.id,
@@ -242,7 +260,7 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     from: Sector,
     to: Sector,
     operator: string
-  ) => {
+  ): void => {
     const product = PRODUCTS.find(p => p.id === productId);
     if (!product) return;
 
@@ -258,6 +276,31 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     };
 
     setTransfers(prev => [newTransfer, ...prev]);
+
+    // Create a pending separation for this transfer
+    const newSeparation: Separation = {
+      id: `sep-${Date.now()}`,
+      transferId: newTransfer.id,
+      productId,
+      productName: product.name,
+      quantity,
+      from,
+      to,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+
+    setSeparations((prev: Separation[]) => [newSeparation, ...prev]);
+  }, []);
+
+  const completeSeparation = useCallback((separationId: string, operator: string) => {
+    setSeparations((prev: Separation[]) =>
+      prev.map((sep: Separation) =>
+        sep.id === separationId
+          ? { ...sep, status: 'completed', completedAt: new Date().toISOString(), operator }
+          : sep
+      )
+    );
   }, []);
 
   const getProductsByCategory = useCallback((category: string) => {
@@ -303,6 +346,18 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     return latest?.totalKg || 0;
   }, [stockCounts]);
 
+  const getPendingSeparations = useCallback(() => {
+    return separations.filter((s: Separation) => s.status === 'pending');
+  }, [separations]);
+
+  const getProductTotalKgAllSectors = useCallback((productId: string) => {
+    const sectorList: Sector[] = ['CD', 'Fábrica', 'PMP', 'PCP'];
+    return sectorList.reduce((sum, sector) => {
+      const latest = stockCounts.find(s => s.productId === productId && s.sector === sector);
+      return sum + (latest?.totalKg || 0);
+    }, 0);
+  }, [stockCounts]);
+
   const value: EstoqueContextType = {
     products: PRODUCTS,
     stockCounts,
@@ -314,6 +369,7 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     recordInboundReceiving,
     updateUnitWeight,
     recordTransfer,
+    completeSeparation,
     getProductsByCategory,
     getAllCategories,
     getLatestStockCount,
@@ -323,6 +379,8 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     getTodayInboundReceivings,
     getSectorTotalKg,
     getProductTotalKgBySector,
+    getPendingSeparations,
+    getProductTotalKgAllSectors,
   };
 
   return (

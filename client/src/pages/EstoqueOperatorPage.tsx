@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useEstoque } from '@/contexts/EstoqueContext';
 import { LogOut } from 'lucide-react';
@@ -14,8 +14,8 @@ const SECTORS: Sector[] = ['CD', 'Fábrica', 'PMP', 'PCP'];
 
 export default function EstoqueOperatorPage() {
   const [, setLocation] = useLocation();
-  const { products, getAllCategories, recordStockCount, recordInboundReceiving, recordTransfer } = useEstoque();
-  const [activeTab, setActiveTab] = useState<'estoque' | 'entrada' | 'movimentacao'>('estoque');
+  const { products, getAllCategories, recordStockCount, recordInboundReceiving, recordTransfer, getPendingSeparations, completeSeparation } = useEstoque();
+  const [activeTab, setActiveTab] = useState<'estoque' | 'entrada' | 'movimentacao' | 'separacao'>('estoque');
   const [selectedSector, setSelectedSector] = useState<Sector>('CD');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCountModal, setShowCountModal] = useState(false);
@@ -23,6 +23,7 @@ export default function EstoqueOperatorPage() {
   const [showTransferModal, setShowTransferModal] = useState(false);
 
   const categories = getAllCategories();
+  const pendingSeparations = getPendingSeparations();
 
   const handleCountProduct = (product: Product) => {
     setSelectedProduct(product);
@@ -132,6 +133,16 @@ export default function EstoqueOperatorPage() {
         >
           🔄 Movimentação
         </button>
+        <button
+          onClick={() => setActiveTab('separacao')}
+          className={`px-4 py-3 font-bold transition-colors whitespace-nowrap ${
+            activeTab === 'separacao'
+              ? 'text-yellow-400 border-b-3 border-yellow-400'
+              : 'text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          📋 Separação ({pendingSeparations.length})
+        </button>
       </div>
 
       {/* Content */}
@@ -204,6 +215,67 @@ export default function EstoqueOperatorPage() {
               products={products}
               onSelectProduct={handleTransferProduct}
             />
+          </div>
+        )}
+
+        {activeTab === 'separacao' && (
+          <div className="space-y-4">
+            <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-4 mb-4">
+              <p className="text-slate-300 text-sm">
+                💡 <span className="font-semibold">Separação:</span> Use esta aba como checklist durante o picking. Confirme cada transferência após preparar o material.
+              </p>
+            </div>
+
+            {pendingSeparations.length === 0 ? (
+              <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-12 text-center">
+                <p className="text-slate-400 text-lg">✓ Nenhuma separação pendente</p>
+                <p className="text-slate-500 text-sm mt-2">Todas as transferências foram confirmadas!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingSeparations.map((separation) => (
+                  <div
+                    key={separation.id}
+                    className="bg-slate-700/50 border-3 border-yellow-500 rounded-lg p-5 hover:bg-slate-700/70 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <p className="text-white font-bold text-lg">{separation.productName}</p>
+                        <p className="text-slate-300 text-sm mt-1">
+                          {separation.from} <span className="text-yellow-400">→</span> {separation.to}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white font-black text-2xl">{separation.quantity}</p>
+                        <p className="text-slate-400 text-xs">sacos</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-800/50 rounded-lg p-3 mb-4">
+                      <p className="text-slate-300 text-xs font-bold mb-2">INSTRUÇÕES:</p>
+                      <p className="text-slate-300 text-sm">
+                        Localize e prepare {separation.quantity} saco(s) de <span className="font-bold">{separation.productName}</span> para transferência.
+                      </p>
+                    </div>
+
+                    <IndustrialButton
+                      size="lg"
+                      variant="success"
+                      onClick={() => {
+                        completeSeparation(separation.id, 'Operador');
+                        toast.success(
+                          `✓ Separação Confirmada\n${separation.productName}\n${separation.from} → ${separation.to}\n${separation.quantity} sacos`,
+                          { duration: 3000 }
+                        );
+                      }}
+                      fullWidth
+                    >
+                      ✓ Confirmar Separação
+                    </IndustrialButton>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
