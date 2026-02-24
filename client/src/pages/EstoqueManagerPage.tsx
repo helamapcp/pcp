@@ -289,6 +289,7 @@ export default function EstoqueManagerPage() {
                       <th className="px-4 py-3 text-right text-white font-bold">Anterior</th>
                       <th className="px-4 py-3 text-right text-white font-bold">Atual</th>
                       <th className="px-4 py-3 text-right text-white font-bold">Movimentação</th>
+                      <th className="px-4 py-3 text-left text-white font-bold">Responsável</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-600">
@@ -310,6 +311,7 @@ export default function EstoqueManagerPage() {
                             {mov.type === 'in' ? '📥 +' : '📤 -'}{Math.abs(mov.movementKg)}kg
                           </span>
                         </td>
+                        <td className="px-4 py-3 text-white text-sm font-semibold">-</td>
                       </tr>
                     ))}
                   </tbody>
@@ -335,18 +337,20 @@ export default function EstoqueManagerPage() {
                       <th className="px-4 py-3 text-left text-white font-bold">De</th>
                       <th className="px-4 py-3 text-left text-white font-bold">Para</th>
                       <th className="px-4 py-3 text-right text-white font-bold">Quantidade</th>
+                      <th className="px-4 py-3 text-left text-white font-bold">Responsável</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-600">
-                    {todayTransfers.map(trans => (
-                      <tr key={trans.id} className="hover:bg-slate-600/30 transition-colors">
+                    {todayTransfers.map(transfer => (
+                      <tr key={transfer.id} className="hover:bg-slate-600/30 transition-colors">
                         <td className="px-4 py-3 text-slate-300 text-xs">
-                          {new Date(trans.timestamp).toLocaleTimeString('pt-BR')}
+                          {new Date(transfer.timestamp).toLocaleTimeString('pt-BR')}
                         </td>
-                        <td className="px-4 py-3 text-white text-sm">{trans.productName}</td>
-                        <td className="px-4 py-3 text-white font-bold">{trans.from}</td>
-                        <td className="px-4 py-3 text-white font-bold">{trans.to}</td>
-                        <td className="px-4 py-3 text-right text-white font-bold">{trans.quantity} sacos</td>
+                        <td className="px-4 py-3 text-white text-sm">{transfer.productName}</td>
+                        <td className="px-4 py-3 text-white text-sm font-bold">{transfer.from}</td>
+                        <td className="px-4 py-3 text-white text-sm font-bold">{transfer.to}</td>
+                        <td className="px-4 py-3 text-right text-white font-bold">{transfer.quantity} sacos</td>
+                        <td className="px-4 py-3 text-white text-sm font-semibold">{transfer.operator}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -381,7 +385,6 @@ export default function EstoqueManagerPage() {
                           {new Date(inbound.timestamp).toLocaleTimeString('pt-BR')}
                         </td>
                         <td className="px-4 py-3 text-white text-sm">{inbound.productName}</td>
-                        <td className="px-4 py-3 text-white text-sm">{inbound.supplier}</td>
                         <td className="px-4 py-3 text-right text-white font-bold">
                           {inbound.quantity} {inbound.unit === 'units' ? 'sacos' : 'kg'}
                         </td>

@@ -3,10 +3,17 @@ import { useLocation } from 'wouter';
 import { IndustrialButton } from '@/components/IndustrialButton';
 import { Smartphone, Monitor } from 'lucide-react';
 
+const USERS = [
+  { id: 'op1', name: 'Operador 1', pin: '1111', role: 'operator' },
+  { id: 'op2', name: 'Operador 2', pin: '2222', role: 'operator' },
+  { id: 'mgr', name: 'Gerente', pin: '1234', role: 'manager' },
+];
+
 export default function EstoqueLogin() {
   const [, setLocation] = useLocation();
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [currentUser, setCurrentUser] = useState<typeof USERS[0] | null>(null);
 
   const handleKeypad = (digit: string) => {
     if (pin.length < 4) {
@@ -19,12 +26,15 @@ export default function EstoqueLogin() {
   };
 
   const handleLogin = (path: string) => {
-    if (pin === '1234') {
+    const user = USERS.find(u => u.pin === pin);
+    if (user) {
       setError('');
       setPin('');
+      setCurrentUser(user);
+      localStorage.setItem('currentUser', JSON.stringify(user));
       setLocation(path);
     } else {
-      setError('PIN incorreto. Use 1234');
+      setError('PIN incorreto');
       setPin('');
     }
   };
@@ -40,7 +50,19 @@ export default function EstoqueLogin() {
 
       {/* Main Container */}
       <div className="w-full max-w-md">
-        {/* PIN Input */}
+        {/* User Info */}
+      <div className="mb-6 bg-slate-800/50 border-2 border-slate-700 rounded-lg p-4 text-center">
+        <p className="text-slate-400 text-xs font-bold mb-2">USUÁRIOS DISPONÍVEIS:</p>
+        <div className="space-y-1 text-sm">
+          {USERS.map(u => (
+            <p key={u.id} className="text-slate-300">
+              {u.name} <span className="text-slate-500">({u.pin})</span>
+            </p>
+          ))}
+        </div>
+      </div>
+
+      {/* PIN Input */}
         <div className="mb-8 bg-slate-800/50 border-3 border-slate-700 rounded-2xl p-8">
           <label className="block text-white text-sm font-bold mb-4">Digite seu PIN</label>
           <div className="bg-black/50 rounded-xl p-6 mb-6 border-3 border-white/20">

@@ -54,13 +54,13 @@ export default function EstoqueOperatorPage() {
     setSelectedProduct(null);
   };
 
-  const handleInboundSubmit = (quantity: number, unit: 'units' | 'kg', supplier: string) => {
+  const handleInboundSubmit = (quantity: number, unit: 'units' | 'kg') => {
     if (!selectedProduct) return;
 
-    recordInboundReceiving(selectedProduct.id, quantity, unit, supplier, 'Operador');
+    recordInboundReceiving(selectedProduct.id, quantity, unit, 'Operador');
 
     toast.success(
-      `✓ Entrada Registrada\n${selectedProduct.name}\n${quantity} ${unit === 'units' ? 'sacos' : 'kg'} de ${supplier}`,
+      `✓ Entrada Registrada\n${selectedProduct.name}\n${quantity} ${unit === 'units' ? 'sacos' : 'kg'}`,
       { duration: 4000 }
     );
 

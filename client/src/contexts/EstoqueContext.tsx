@@ -74,13 +74,25 @@ export interface InboundReceiving {
   quantity: number;
   unit: 'units' | 'kg';
   totalKg: number;
-  supplier: string;
   timestamp: string;
   operator: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  role: 'operator' | 'manager';
+}
+
 interface EstoqueContextType {
   products: Product[];
+  categories: Category[];
   stockCounts: StockCount[];
   movements: Movement[];
   transfers: Transfer[];
@@ -88,10 +100,17 @@ interface EstoqueContextType {
   unitWeights: UnitWeightConfig[];
   
   recordStockCount: (productId: string, sector: Sector, currentQuantity: number, unit: 'units' | 'kg', operator: string) => void;
-  recordInboundReceiving: (productId: string, quantity: number, unit: 'units' | 'kg', supplier: string, operator: string) => void;
+  recordInboundReceiving: (productId: string, quantity: number, unit: 'units' | 'kg', operator: string) => void;
   updateUnitWeight: (productId: string, unitWeight: number) => void;
   recordTransfer: (productId: string, quantity: number, from: Sector, to: Sector, operator: string) => void;
   completeSeparation: (separationId: string, operator: string) => void;
+  
+  addCategory: (name: string, description?: string) => void;
+  updateCategory: (categoryId: string, name: string, description?: string) => void;
+  deleteCategory: (categoryId: string) => void;
+  addProduct: (name: string, categoryId: string, type: 'raw_material' | 'production' | 'scrap', defaultUnitWeight: number) => void;
+  updateProduct: (productId: string, name: string, categoryId: string, defaultUnitWeight: number) => void;
+  deleteProduct: (productId: string) => void;
   
   getProductsByCategory: (category: string) => Product[];
   getAllCategories: () => string[];
@@ -217,7 +236,6 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     productId: string,
     quantity: number,
     unit: 'units' | 'kg',
-    supplier: string,
     operator: string
   ) => {
     const product = PRODUCTS.find(p => p.id === productId);
@@ -233,7 +251,6 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
       quantity,
       unit,
       totalKg,
-      supplier,
       timestamp: new Date().toISOString(),
       operator,
     };
@@ -358,8 +375,33 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     }, 0);
   }, [stockCounts]);
 
+  const addCategory = useCallback((name: string, description?: string) => {
+    // Placeholder for future backend integration
+  }, []);
+
+  const updateCategory = useCallback((categoryId: string, name: string, description?: string) => {
+    // Placeholder for future backend integration
+  }, []);
+
+  const deleteCategory = useCallback((categoryId: string) => {
+    // Placeholder for future backend integration
+  }, []);
+
+  const addProduct = useCallback((name: string, categoryId: string, type: 'raw_material' | 'production' | 'scrap', defaultUnitWeight: number) => {
+    // Placeholder for future backend integration
+  }, []);
+
+  const updateProduct = useCallback((productId: string, name: string, categoryId: string, defaultUnitWeight: number) => {
+    // Placeholder for future backend integration
+  }, []);
+
+  const deleteProduct = useCallback((productId: string) => {
+    // Placeholder for future backend integration
+  }, []);
+
   const value: EstoqueContextType = {
     products: PRODUCTS,
+    categories: Array.from(new Set(PRODUCTS.map(p => p.category))).map((cat, idx) => ({ id: `cat-${idx}`, name: cat })),
     stockCounts,
     movements,
     transfers,
@@ -370,6 +412,12 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     updateUnitWeight,
     recordTransfer,
     completeSeparation,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addProduct,
+    updateProduct,
+    deleteProduct,
     getProductsByCategory,
     getAllCategories,
     getLatestStockCount,

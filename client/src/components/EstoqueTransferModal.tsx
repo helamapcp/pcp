@@ -12,6 +12,16 @@ interface EstoqueTransferModalProps {
 
 const SECTORS: Sector[] = ['CD', 'Fábrica', 'PMP', 'PCP'];
 
+const getSmartDestination = (origin: Sector): Sector => {
+  const routing: Record<Sector, Sector> = {
+    'CD': 'PCP',
+    'PCP': 'PMP',
+    'PMP': 'Fábrica',
+    'Fábrica': 'CD',
+  };
+  return routing[origin];
+};
+
 export function EstoqueTransferModal({
   isOpen,
   product,
@@ -20,8 +30,13 @@ export function EstoqueTransferModal({
 }: EstoqueTransferModalProps) {
   const [quantity, setQuantity] = useState('');
   const [from, setFrom] = useState<Sector>('CD');
-  const [to, setTo] = useState<Sector>('Fábrica');
+  const [to, setTo] = useState<Sector>(getSmartDestination('CD'));
   const [error, setError] = useState('');
+
+  const handleFromChange = (newFrom: Sector) => {
+    setFrom(newFrom);
+    setTo(getSmartDestination(newFrom));
+  };
 
   if (!isOpen || !product) return null;
 
@@ -50,7 +65,7 @@ export function EstoqueTransferModal({
     onSubmit(parseInt(quantity), from, to);
     setQuantity('');
     setFrom('CD');
-    setTo('Fábrica');
+    setTo(getSmartDestination('CD'));
   };
 
   return (
@@ -118,7 +133,7 @@ export function EstoqueTransferModal({
                 {SECTORS.map(sector => (
                   <button
                     key={sector}
-                    onClick={() => setFrom(sector)}
+                    onClick={() => handleFromChange(sector)}
                     className={`px-4 py-3 rounded-lg font-bold transition-all border-2 min-h-[48px] text-sm ${
                       from === sector
                         ? 'bg-blue-600 text-white border-blue-500 hover:bg-blue-700'

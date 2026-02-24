@@ -7,7 +7,7 @@ interface InboundReceivingModalProps {
   isOpen: boolean;
   product: Product | null;
   onClose: () => void;
-  onSubmit: (quantity: number, unit: 'units' | 'kg', supplier: string) => void;
+  onSubmit: (quantity: number, unit: 'units' | 'kg') => void;
 }
 
 export function InboundReceivingModal({
@@ -18,7 +18,6 @@ export function InboundReceivingModal({
 }: InboundReceivingModalProps) {
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState<'units' | 'kg'>('units');
-  const [supplier, setSupplier] = useState('');
   const [error, setError] = useState('');
 
   if (!isOpen || !product) return null;
@@ -39,16 +38,10 @@ export function InboundReceivingModal({
       return;
     }
 
-    if (!supplier.trim()) {
-      setError('Nome do fornecedor é obrigatório');
-      return;
-    }
-
     setError('');
-    onSubmit(parseInt(quantity), unit, supplier);
+    onSubmit(parseInt(quantity), unit);
     setQuantity('');
     setUnit('units');
-    setSupplier('');
   };
 
   return (
@@ -58,7 +51,7 @@ export function InboundReceivingModal({
         <div className="bg-slate-800 px-6 py-5 border-b-2 border-slate-700 flex justify-between items-center sticky top-0 z-10">
           <div>
             <h2 className="text-2xl font-bold text-white">📥 Entrada no CD</h2>
-            <p className="text-slate-300 text-sm mt-1">Recebimento de Fornecedor</p>
+            <p className="text-slate-300 text-sm mt-1">Recebimento de Material</p>
           </div>
           <button
             onClick={onClose}
@@ -74,18 +67,6 @@ export function InboundReceivingModal({
           <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-4">
             <p className="text-slate-400 text-xs font-bold mb-1">PRODUTO</p>
             <p className="text-white font-bold text-lg">{product.name}</p>
-          </div>
-
-          {/* Supplier Input */}
-          <div>
-            <label className="block text-white text-base font-bold mb-3">Fornecedor</label>
-            <input
-              type="text"
-              value={supplier}
-              onChange={(e) => setSupplier(e.target.value)}
-              placeholder="Nome do fornecedor"
-              className="w-full px-4 py-3 bg-slate-800 border-2 border-slate-600 rounded-lg text-white placeholder-slate-500 font-semibold min-h-[48px]"
-            />
           </div>
 
           {/* Quantity Display */}
@@ -161,14 +142,9 @@ export function InboundReceivingModal({
           {/* Summary */}
           <div className="bg-slate-700/70 rounded-xl p-5 border-2 border-slate-600">
             <p className="text-slate-300 text-xs font-bold mb-2">RESUMO</p>
-            <p className="text-white font-bold text-lg mb-2">
+            <p className="text-white font-bold text-lg">
               {quantity ? `${quantity} ${unit === 'units' ? 'sacos' : 'kg'}` : '-'}
             </p>
-            {supplier && (
-              <p className="text-slate-300 text-sm">
-                Fornecedor: <span className="font-bold text-white">{supplier}</span>
-              </p>
-            )}
           </div>
 
           {/* Action Buttons */}
