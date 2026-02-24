@@ -8,7 +8,7 @@ import { X, Plus, Trash2, Edit2, LogOut } from 'lucide-react';
 export default function AdminPanel() {
   const [, setLocation] = useLocation();
   const { currentUser, setCurrentUser, users, addUser, updateUser, deleteUser } = useUserManagement();
-  const { products, categories, addCategory, updateCategory, deleteCategory, addProduct, updateProduct, deleteProduct, unitWeights, setUnitWeight } = useEstoque();
+  const { products, categories, addCategory, updateCategory, deleteCategory, addProduct, updateProduct, deleteProduct, unitWeights, updateUnitWeight, getUnitWeight } = useEstoque();
   
   const [activeTab, setActiveTab] = useState<'users' | 'products' | 'weights'>('users');
   const [showUserForm, setShowUserForm] = useState(false);
@@ -355,7 +355,7 @@ export default function AdminPanel() {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {products
-                      .filter(p => p.categoryId === category.id)
+                      .filter(p => p.category === category.name)
                       .map(product => (
                         <div key={product.id} className="bg-slate-700 px-3 py-2 rounded text-slate-300 text-sm flex justify-between items-center">
                           <span>{product.name}</span>
@@ -392,7 +392,7 @@ export default function AdminPanel() {
                     <td className="px-6 py-4 text-center">
                       <input
                         type="number"
-                        value={editingWeights[product.id] ?? unitWeights[product.id] ?? 1250}
+                        value={editingWeights[product.id] ?? getUnitWeight(product.id)}
                         onChange={(e) => setEditingWeights({ ...editingWeights, [product.id]: parseFloat(e.target.value) })}
                         className="w-24 px-3 py-2 bg-slate-700 border-2 border-slate-600 rounded text-white text-center font-semibold"
                       />
@@ -400,8 +400,9 @@ export default function AdminPanel() {
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => {
-                          setUnitWeight(product.id, editingWeights[product.id] ?? unitWeights[product.id] ?? 1250);
-                          setEditingWeights({ ...editingWeights, [product.id]: undefined });
+                          updateUnitWeight(product.id, editingWeights[product.id] ?? getUnitWeight(product.id));
+                          const { [product.id]: _, ...rest } = editingWeights;
+                          setEditingWeights(rest);
                         }}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-semibold"
                       >
