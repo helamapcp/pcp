@@ -2,21 +2,25 @@ import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useUserManagement } from '@/contexts/UserManagementContext';
 import { IndustrialButton } from '@/components/IndustrialButton';
+import { Lock, User } from 'lucide-react';
 
 export default function EstoqueLogin() {
   const [, setLocation] = useLocation();
-  const { users, authenticateUser } = useUserManagement();
+  const { authenticateUser } = useUserManagement();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleLogin = () => {
+    if (!username.trim() || !password.trim()) {
+      setError('Preencha todos os campos');
+      return;
+    }
     const user = authenticateUser(username, password);
     if (user) {
       setError('');
       setUsername('');
       setPassword('');
-      // Route based on role
       if (user.role === 'admin') {
         setLocation('/admin');
       } else if (user.role === 'gerente') {
@@ -31,85 +35,92 @@ export default function EstoqueLogin() {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleLogin();
-    }
+    if (e.key === 'Enter') handleLogin();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       {/* Header */}
-      <div className="mb-12 text-center">
-        <h1 className="text-5xl font-black text-white mb-2">ESTOQUE</h1>
-        <p className="text-slate-400 text-lg">Sistema de Inventário PVC</p>
-        <div className="h-1 w-16 bg-blue-600 mx-auto mt-4 rounded-full"></div>
+      <div className="mb-10 text-center">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-2xl mb-4">
+          <span className="text-3xl font-black text-primary-foreground">PVC</span>
+        </div>
+        <h1 className="text-4xl font-black text-foreground mb-1">ESTOQUE</h1>
+        <p className="text-muted-foreground text-base">Sistema de Inventário Industrial</p>
+        <div className="h-1 w-16 bg-primary mx-auto mt-4 rounded-full"></div>
       </div>
 
-      {/* Main Container */}
+      {/* Login Form */}
       <div className="w-full max-w-md">
-        {/* User Info */}
-        <div className="mb-6 bg-slate-800/50 border-2 border-slate-700 rounded-lg p-4 text-center">
-          <p className="text-slate-400 text-xs font-bold mb-3">USUÁRIOS DISPONÍVEIS:</p>
-          <div className="space-y-2 text-sm max-h-32 overflow-y-auto">
-            {users.map(u => (
-              <p key={u.id} className="text-slate-300">
-                <span className="font-semibold">{u.name}</span>
-                <br />
-                <span className="text-slate-500 text-xs">
-                  {u.role === 'admin' && '🔐 Admin'} 
-                  {u.role === 'gerente' && '👔 Gerente'} 
-                  {u.role === 'operador' && '👷 Operador'}
-                  {' '}• User: {u.username}
-                </span>
-              </p>
-            ))}
+        <div className="bg-card border-2 border-border rounded-2xl p-6 md:p-8 space-y-6">
+          <div>
+            <label className="block text-foreground text-sm font-bold mb-2">
+              <User className="w-4 h-4 inline-block mr-1 mb-0.5" />
+              Usuário
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => { setUsername(e.target.value); setError(''); }}
+              onKeyDown={handleKeyPress}
+              placeholder="Digite seu usuário"
+              autoComplete="username"
+              className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target focus:border-primary focus:ring-2 focus:ring-ring transition-colors"
+            />
           </div>
-        </div>
 
-        {/* Login Form */}
-        <div className="mb-8 bg-slate-800/50 border-3 border-slate-700 rounded-2xl p-8">
-          <label className="block text-white text-sm font-bold mb-4">Usuário</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Digite seu usuário"
-            className="w-full px-4 py-3 bg-slate-700 border-2 border-slate-600 rounded-lg text-white placeholder-slate-500 font-semibold mb-6 min-h-[48px]"
-          />
+          <div>
+            <label className="block text-foreground text-sm font-bold mb-2">
+              <Lock className="w-4 h-4 inline-block mr-1 mb-0.5" />
+              Senha
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              onKeyDown={handleKeyPress}
+              placeholder="Digite sua senha"
+              autoComplete="current-password"
+              className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target focus:border-primary focus:ring-2 focus:ring-ring transition-colors"
+            />
+          </div>
 
-          <label className="block text-white text-sm font-bold mb-4">Senha</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Digite sua senha"
-            className="w-full px-4 py-3 bg-slate-700 border-2 border-slate-600 rounded-lg text-white placeholder-slate-500 font-semibold mb-6 min-h-[48px]"
-          />
-
-          {/* Error Message */}
           {error && (
-            <div className="bg-red-900/50 border-2 border-red-500 rounded-lg p-4 mb-6">
-              <p className="text-red-300 text-sm font-semibold">⚠️ {error}</p>
+            <div className="bg-destructive/10 border-2 border-destructive rounded-lg p-4">
+              <p className="text-destructive text-sm font-semibold">⚠️ {error}</p>
             </div>
           )}
 
-          {/* Login Button */}
           <IndustrialButton
-            size="lg"
-            variant="success"
+            size="xl"
+            variant="primary"
             onClick={handleLogin}
-            className="w-full"
           >
             Entrar
           </IndustrialButton>
         </div>
 
-        {/* Footer Info */}
-        <div className="text-center text-slate-500 text-xs">
-          <p>Sistema de Controle de Inventário</p>
-          <p>Fábrica de PVC</p>
+        {/* Demo Info (dev only) */}
+        <div className="mt-6 bg-card/50 border border-border rounded-lg p-4">
+          <p className="text-muted-foreground text-xs text-center font-bold mb-2">DEMO - CREDENCIAIS</p>
+          <div className="grid grid-cols-3 gap-2 text-xs text-center">
+            <div className="bg-secondary rounded p-2">
+              <p className="text-foreground font-bold">Admin</p>
+              <p className="text-muted-foreground">admin / password123</p>
+            </div>
+            <div className="bg-secondary rounded p-2">
+              <p className="text-foreground font-bold">Gerente</p>
+              <p className="text-muted-foreground">gerente / mgr123</p>
+            </div>
+            <div className="bg-secondary rounded p-2">
+              <p className="text-foreground font-bold">Operador</p>
+              <p className="text-muted-foreground">operador1 / op123</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center mt-6 text-muted-foreground text-xs">
+          <p>Sistema de Controle de Inventário • Fábrica de PVC</p>
         </div>
       </div>
     </div>

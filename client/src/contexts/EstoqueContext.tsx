@@ -84,33 +84,41 @@ export interface Category {
   description?: string;
 }
 
-export interface User {
+export interface AuditLogEntry {
   id: string;
-  name: string;
-  role: 'operator' | 'manager';
+  timestamp: string;
+  user: string;
+  action: 'stock_count' | 'inbound' | 'transfer' | 'separation_complete' | 'weight_update' | 'product_add' | 'product_delete' | 'category_add' | 'category_delete';
+  description: string;
+  productName?: string;
+  quantity?: number;
+  fromSector?: Sector;
+  toSector?: Sector;
 }
 
 interface EstoqueContextType {
   products: Product[];
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   categories: Category[];
   stockCounts: StockCount[];
   movements: Movement[];
   transfers: Transfer[];
   inboundReceivings: InboundReceiving[];
   unitWeights: UnitWeightConfig[];
+  auditLog: AuditLogEntry[];
   
   recordStockCount: (productId: string, sector: Sector, currentQuantity: number, unit: 'units' | 'kg', operator: string) => void;
   recordInboundReceiving: (productId: string, quantity: number, unit: 'units' | 'kg', operator: string) => void;
-  updateUnitWeight: (productId: string, unitWeight: number) => void;
+  updateUnitWeight: (productId: string, unitWeight: number, operator?: string) => void;
   recordTransfer: (productId: string, quantity: number, from: Sector, to: Sector, operator: string) => void;
   completeSeparation: (separationId: string, operator: string) => void;
   
-  addCategory: (name: string, description?: string) => void;
+  addCategory: (name: string, description?: string, operator?: string) => void;
   updateCategory: (categoryId: string, name: string, description?: string) => void;
-  deleteCategory: (categoryId: string) => void;
-  addProduct: (name: string, categoryId: string, type: 'raw_material' | 'production' | 'scrap', defaultUnitWeight: number) => void;
+  deleteCategory: (categoryId: string, operator?: string) => void;
+  addProduct: (name: string, categoryId: string, type: 'raw_material' | 'production' | 'scrap', defaultUnitWeight: number, operator?: string) => void;
   updateProduct: (productId: string, name: string, categoryId: string, defaultUnitWeight: number) => void;
-  deleteProduct: (productId: string) => void;
+  deleteProduct: (productId: string, operator?: string) => void;
   
   getProductsByCategory: (category: string) => Product[];
   getAllCategories: () => string[];
@@ -127,12 +135,11 @@ interface EstoqueContextType {
 
 const EstoqueContext = createContext<EstoqueContextType | undefined>(undefined);
 
-const PRODUCTS: Product[] = [
+const DEFAULT_PRODUCTS: Product[] = [
   // Resinas
   { id: 'prod1', name: 'Resina SP 750 PRIME', category: 'Resinas', type: 'raw_material', defaultUnitWeight: 1250 },
   { id: 'prod2', name: 'Resina SP 750 OFF', category: 'Resinas', type: 'raw_material', defaultUnitWeight: 1250 },
   { id: 'prod3', name: 'SP-90', category: 'Resinas', type: 'raw_material', defaultUnitWeight: 1250 },
-  
   // Cargas/Aditivos
   { id: 'prod4', name: 'Dióxido de Titânio', category: 'Cargas/Aditivos', type: 'raw_material', defaultUnitWeight: 25 },
   { id: 'prod5', name: 'Micron 1/9 CD', category: 'Cargas/Aditivos', type: 'raw_material', defaultUnitWeight: 1250 },
@@ -146,40 +153,47 @@ const PRODUCTS: Product[] = [
   { id: 'prod13', name: 'CZP 754', category: 'Cargas/Aditivos', type: 'raw_material', defaultUnitWeight: 500 },
   { id: 'prod14', name: 'Drapex', category: 'Cargas/Aditivos', type: 'raw_material', defaultUnitWeight: 500 },
   { id: 'prod15', name: 'LP 40', category: 'Cargas/Aditivos', type: 'raw_material', defaultUnitWeight: 500 },
-  
   // Pigmentos
   { id: 'prod16', name: 'Colormatch Ochre', category: 'Pigmentos', type: 'raw_material', defaultUnitWeight: 25 },
   { id: 'prod17', name: 'Colormatch Blue', category: 'Pigmentos', type: 'raw_material', defaultUnitWeight: 25 },
   { id: 'prod18', name: 'Pigmento Liquido Ochre', category: 'Pigmentos', type: 'raw_material', defaultUnitWeight: 200 },
   { id: 'prod19', name: 'Pigmento Liquido Cinza', category: 'Pigmentos', type: 'raw_material', defaultUnitWeight: 200 },
   { id: 'prod20', name: 'Pigmento Liquido Marfim', category: 'Pigmentos', type: 'raw_material', defaultUnitWeight: 200 },
-  
   // Capstock
   { id: 'prod21', name: 'Capstock Terracota Remo', category: 'Capstock', type: 'raw_material', defaultUnitWeight: 1250 },
   { id: 'prod22', name: 'Capstock Marfim Remo', category: 'Capstock', type: 'raw_material', defaultUnitWeight: 1250 },
   { id: 'prod23', name: 'Capstock Branco Remo', category: 'Capstock', type: 'raw_material', defaultUnitWeight: 1250 },
-  
   // Produção (PMP)
   { id: 'prod24', name: 'Composto Telha', category: 'Produção (PMP)', type: 'production', defaultUnitWeight: 1250 },
   { id: 'prod25', name: 'Composto Forro', category: 'Produção (PMP)', type: 'production', defaultUnitWeight: 1250 },
-  
   // Sucata
   { id: 'prod26', name: 'Varredura', category: 'Sucata', type: 'scrap', defaultUnitWeight: 1 },
 ];
 
 export function EstoqueProvider({ children }: { children: React.ReactNode }) {
+  const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
   const [stockCounts, setStockCounts] = useState<StockCount[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [inboundReceivings, setInboundReceivings] = useState<InboundReceiving[]>([]);
   const [separations, setSeparations] = useState<Separation[]>([]);
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [unitWeights, setUnitWeights] = useState<UnitWeightConfig[]>(
-    PRODUCTS.map(p => ({
+    DEFAULT_PRODUCTS.map(p => ({
       productId: p.id,
       productName: p.name,
       unitWeight: p.defaultUnitWeight,
     }))
   );
+
+  const addAuditEntry = useCallback((entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => {
+    const newEntry: AuditLogEntry = {
+      ...entry,
+      id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: new Date().toISOString(),
+    };
+    setAuditLog(prev => [newEntry, ...prev]);
+  }, []);
 
   const recordStockCount = useCallback((
     productId: string,
@@ -188,7 +202,7 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     unit: 'units' | 'kg',
     operator: string
   ) => {
-    const product = PRODUCTS.find(p => p.id === productId);
+    const product = products.find(p => p.id === productId);
     if (!product) return;
 
     const unitWeight = unitWeights.find(uw => uw.productId === productId)?.unitWeight || product.defaultUnitWeight;
@@ -209,7 +223,6 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
 
     setStockCounts(prev => [newStockCount, ...prev]);
 
-    // Calculate movement
     const previousCount = stockCounts.find(s => s.productId === productId && s.sector === sector);
     if (previousCount) {
       const movementQuantity = currentQuantity - previousCount.currentQuantity;
@@ -230,7 +243,16 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
 
       setMovements(prev => [newMovement, ...prev]);
     }
-  }, [stockCounts, unitWeights]);
+
+    addAuditEntry({
+      user: operator,
+      action: 'stock_count',
+      description: `Contagem de estoque: ${product.name} em ${sector} → ${currentQuantity} ${unit === 'units' ? 'sacos' : 'kg'}`,
+      productName: product.name,
+      quantity: currentQuantity,
+      toSector: sector,
+    });
+  }, [stockCounts, unitWeights, products, addAuditEntry]);
 
   const recordInboundReceiving = useCallback((
     productId: string,
@@ -238,7 +260,7 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     unit: 'units' | 'kg',
     operator: string
   ) => {
-    const product = PRODUCTS.find(p => p.id === productId);
+    const product = products.find(p => p.id === productId);
     if (!product) return;
 
     const unitWeight = unitWeights.find(uw => uw.productId === productId)?.unitWeight || product.defaultUnitWeight;
@@ -257,19 +279,36 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
 
     setInboundReceivings(prev => [newInbound, ...prev]);
 
-    // Automatically increase CD stock
     const currentCDCount = stockCounts.find(s => s.productId === productId && s.sector === 'CD');
     const newCDQuantity = (currentCDCount?.currentQuantity || 0) + quantity;
     recordStockCount(productId, 'CD', newCDQuantity, unit, operator);
-  }, [stockCounts, unitWeights, recordStockCount]);
 
-  const updateUnitWeight = useCallback((productId: string, unitWeight: number) => {
+    addAuditEntry({
+      user: operator,
+      action: 'inbound',
+      description: `Entrada no CD: ${product.name} → ${quantity} ${unit === 'units' ? 'sacos' : 'kg'} (${totalKg}kg)`,
+      productName: product.name,
+      quantity,
+      toSector: 'CD',
+    });
+  }, [stockCounts, unitWeights, products, recordStockCount, addAuditEntry]);
+
+  const updateUnitWeight = useCallback((productId: string, unitWeight: number, operator?: string) => {
+    const product = products.find(p => p.id === productId);
     setUnitWeights(prev =>
       prev.map(uw =>
         uw.productId === productId ? { ...uw, unitWeight } : uw
       )
     );
-  }, []);
+    if (operator && product) {
+      addAuditEntry({
+        user: operator,
+        action: 'weight_update',
+        description: `Peso unitário atualizado: ${product.name} → ${unitWeight}kg`,
+        productName: product.name,
+      });
+    }
+  }, [products, addAuditEntry]);
 
   const recordTransfer = useCallback((
     productId: string,
@@ -278,7 +317,7 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     to: Sector,
     operator: string
   ): void => {
-    const product = PRODUCTS.find(p => p.id === productId);
+    const product = products.find(p => p.id === productId);
     if (!product) return;
 
     const newTransfer: Transfer = {
@@ -294,7 +333,6 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
 
     setTransfers(prev => [newTransfer, ...prev]);
 
-    // Create a pending separation for this transfer
     const newSeparation: Separation = {
       id: `sep-${Date.now()}`,
       transferId: newTransfer.id,
@@ -308,25 +346,47 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     };
 
     setSeparations((prev: Separation[]) => [newSeparation, ...prev]);
-  }, []);
+
+    addAuditEntry({
+      user: operator,
+      action: 'transfer',
+      description: `Transferência: ${product.name} → ${quantity} sacos de ${from} para ${to}`,
+      productName: product.name,
+      quantity,
+      fromSector: from,
+      toSector: to,
+    });
+  }, [products, addAuditEntry]);
 
   const completeSeparation = useCallback((separationId: string, operator: string) => {
+    const sep = separations.find(s => s.id === separationId);
     setSeparations((prev: Separation[]) =>
-      prev.map((sep: Separation) =>
-        sep.id === separationId
-          ? { ...sep, status: 'completed', completedAt: new Date().toISOString(), operator }
-          : sep
+      prev.map((s: Separation) =>
+        s.id === separationId
+          ? { ...s, status: 'completed', completedAt: new Date().toISOString(), operator }
+          : s
       )
     );
-  }, []);
+    if (sep) {
+      addAuditEntry({
+        user: operator,
+        action: 'separation_complete',
+        description: `Separação confirmada: ${sep.productName} → ${sep.quantity} sacos de ${sep.from} para ${sep.to}`,
+        productName: sep.productName,
+        quantity: sep.quantity,
+        fromSector: sep.from,
+        toSector: sep.to,
+      });
+    }
+  }, [separations, addAuditEntry]);
 
   const getProductsByCategory = useCallback((category: string) => {
-    return PRODUCTS.filter(p => p.category === category);
-  }, []);
+    return products.filter(p => p.category === category);
+  }, [products]);
 
   const getAllCategories = useCallback(() => {
-    return Array.from(new Set(PRODUCTS.map(p => p.category)));
-  }, []);
+    return Array.from(new Set(products.map(p => p.category)));
+  }, [products]);
 
   const getLatestStockCount = useCallback((productId: string, sector: Sector) => {
     return stockCounts.find(s => s.productId === productId && s.sector === sector);
@@ -334,8 +394,8 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
 
   const getUnitWeight = useCallback((productId: string) => {
     return unitWeights.find(uw => uw.productId === productId)?.unitWeight || 
-           PRODUCTS.find(p => p.id === productId)?.defaultUnitWeight || 1;
-  }, [unitWeights]);
+           products.find(p => p.id === productId)?.defaultUnitWeight || 1;
+  }, [unitWeights, products]);
 
   const getTodayMovements = useCallback(() => {
     const today = new Date().toDateString();
@@ -375,38 +435,78 @@ export function EstoqueProvider({ children }: { children: React.ReactNode }) {
     }, 0);
   }, [stockCounts]);
 
-  const addCategory = useCallback((name: string, description?: string) => {
-    // Placeholder for future backend integration
+  const addCategory = useCallback((name: string, _description?: string, operator?: string) => {
+    if (operator) {
+      addAuditEntry({
+        user: operator,
+        action: 'category_add',
+        description: `Categoria criada: ${name}`,
+      });
+    }
+  }, [addAuditEntry]);
+
+  const updateCategory = useCallback((_categoryId: string, _name: string, _description?: string) => {
+    // Placeholder
   }, []);
 
-  const updateCategory = useCallback((categoryId: string, name: string, description?: string) => {
-    // Placeholder for future backend integration
-  }, []);
+  const deleteCategory = useCallback((categoryId: string, operator?: string) => {
+    if (operator) {
+      addAuditEntry({
+        user: operator,
+        action: 'category_delete',
+        description: `Categoria removida: ${categoryId}`,
+      });
+    }
+  }, [addAuditEntry]);
 
-  const deleteCategory = useCallback((categoryId: string) => {
-    // Placeholder for future backend integration
-  }, []);
-
-  const addProduct = useCallback((name: string, categoryId: string, type: 'raw_material' | 'production' | 'scrap', defaultUnitWeight: number) => {
-    // Placeholder for future backend integration
-  }, []);
+  const addProduct = useCallback((name: string, categoryId: string, type: 'raw_material' | 'production' | 'scrap', defaultUnitWeight: number, operator?: string) => {
+    const newProduct: Product = {
+      id: `prod-${Date.now()}`,
+      name,
+      category: categoryId,
+      type,
+      defaultUnitWeight,
+    };
+    setProducts(prev => [...prev, newProduct]);
+    setUnitWeights(prev => [...prev, { productId: newProduct.id, productName: name, unitWeight: defaultUnitWeight }]);
+    if (operator) {
+      addAuditEntry({
+        user: operator,
+        action: 'product_add',
+        description: `Produto criado: ${name} (${categoryId}) - ${defaultUnitWeight}kg/unidade`,
+        productName: name,
+      });
+    }
+  }, [addAuditEntry]);
 
   const updateProduct = useCallback((productId: string, name: string, categoryId: string, defaultUnitWeight: number) => {
-    // Placeholder for future backend integration
+    setProducts(prev => prev.map(p => p.id === productId ? { ...p, name, category: categoryId, defaultUnitWeight } : p));
   }, []);
 
-  const deleteProduct = useCallback((productId: string) => {
-    // Placeholder for future backend integration
-  }, []);
+  const deleteProduct = useCallback((productId: string, operator?: string) => {
+    const product = products.find(p => p.id === productId);
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    setUnitWeights(prev => prev.filter(uw => uw.productId !== productId));
+    if (operator && product) {
+      addAuditEntry({
+        user: operator,
+        action: 'product_delete',
+        description: `Produto removido: ${product.name}`,
+        productName: product.name,
+      });
+    }
+  }, [products, addAuditEntry]);
 
   const value: EstoqueContextType = {
-    products: PRODUCTS,
-    categories: Array.from(new Set(PRODUCTS.map(p => p.category))).map((cat, idx) => ({ id: `cat-${idx}`, name: cat })),
+    products,
+    setProducts,
+    categories: Array.from(new Set(products.map(p => p.category))).map((cat, idx) => ({ id: `cat-${idx}`, name: cat })),
     stockCounts,
     movements,
     transfers,
     inboundReceivings,
     unitWeights,
+    auditLog,
     recordStockCount,
     recordInboundReceiving,
     updateUnitWeight,
