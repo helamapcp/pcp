@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Check, ArrowRight } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { X, Check, ArrowRight, AlertTriangle } from 'lucide-react';
 import { IndustrialButton } from './IndustrialButton';
 import type { Product, Sector } from '@/contexts/EstoqueContext';
 
@@ -32,6 +32,9 @@ export function EstoqueTransferModal({
   const [from, setFrom] = useState<Sector>('CD');
   const [to, setTo] = useState<Sector>(getSmartDestination('CD'));
   const [error, setError] = useState('');
+  const [showExtremeWarning, setShowExtremeWarning] = useState(false);
+
+  const EXTREME_THRESHOLD = 500;
 
   const handleFromChange = (newFrom: Sector) => {
     setFrom(newFrom);
@@ -43,15 +46,18 @@ export function EstoqueTransferModal({
   const handleKeypad = (digit: string) => {
     if (quantity.length < 8) {
       setQuantity(quantity + digit);
+      setShowExtremeWarning(false);
     }
   };
 
   const handleBackspace = () => {
     setQuantity(quantity.slice(0, -1));
+    setShowExtremeWarning(false);
   };
 
   const handleSubmit = () => {
-    if (!quantity || parseInt(quantity) <= 0) {
+    const qty = parseInt(quantity);
+    if (!quantity || qty <= 0) {
       setError('Quantidade deve ser maior que 0');
       return;
     }
@@ -61,8 +67,14 @@ export function EstoqueTransferModal({
       return;
     }
 
+    if (qty >= EXTREME_THRESHOLD && !showExtremeWarning) {
+      setShowExtremeWarning(true);
+      return;
+    }
+
     setError('');
-    onSubmit(parseInt(quantity), from, to);
+    setShowExtremeWarning(false);
+    onSubmit(qty, from, to);
     setQuantity('');
     setFrom('CD');
     setTo(getSmartDestination('CD'));
@@ -171,6 +183,21 @@ export function EstoqueTransferModal({
               </div>
             </div>
           </div>
+
+          {/* Extreme Value Warning */}
+          {showExtremeWarning && (
+            <div className="bg-yellow-900/60 border-2 border-yellow-500 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-yellow-300 text-sm font-bold mb-1">⚠️ Valor muito alto!</p>
+                  <p className="text-yellow-200 text-xs">
+                    Você digitou <span className="font-black">{quantity}</span> sacos. Tem certeza? Clique "Confirmar" novamente para prosseguir.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (

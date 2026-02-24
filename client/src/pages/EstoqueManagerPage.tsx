@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useEstoque } from '@/contexts/EstoqueContext';
-import { LogOut, Save } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { IndustrialButton } from '@/components/IndustrialButton';
 import type { Sector } from '@/contexts/EstoqueContext';
@@ -10,38 +10,9 @@ const SECTORS: Sector[] = ['CD', 'Fábrica', 'PMP', 'PCP'];
 
 export default function EstoqueManagerPage() {
   const [, setLocation] = useLocation();
-  const { products, stockCounts, movements, transfers, inboundReceivings, unitWeights, updateUnitWeight, getSectorTotalKg, getTodayMovements, getTodayTransfers, getTodayInboundReceivings, getProductTotalKgAllSectors } = useEstoque();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'settings' | 'movements' | 'transfers' | 'inbound'>('dashboard');
-  const [editingWeights, setEditingWeights] = useState<Record<string, number>>({});
-  const [hasChanges, setHasChanges] = useState(false);
+  const { products, stockCounts, getSectorTotalKg, getTodayMovements, getTodayTransfers, getTodayInboundReceivings, getProductTotalKgAllSectors } = useEstoque();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'movements' | 'transfers' | 'inbound'>('dashboard');
   const [selectedProductFilter, setSelectedProductFilter] = useState<string | null>(null);
-
-  useEffect(() => {
-    const initialWeights: Record<string, number> = {};
-    unitWeights.forEach(uw => {
-      initialWeights[uw.productId] = uw.unitWeight;
-    });
-    setEditingWeights(initialWeights);
-  }, [unitWeights]);
-
-  const handleWeightChange = (productId: string, newWeight: number) => {
-    setEditingWeights(prev => ({
-      ...prev,
-      [productId]: newWeight,
-    }));
-    setHasChanges(true);
-  };
-
-  const handleSaveWeights = () => {
-    Object.entries(editingWeights).forEach(([productId, weight]) => {
-      const original = unitWeights.find(uw => uw.productId === productId)?.unitWeight;
-      if (original !== weight) {
-        updateUnitWeight(productId, weight);
-      }
-    });
-    setHasChanges(false);
-    toast.success('✓ Pesos unitários atualizados com sucesso!');
-  };
 
   const todayMovements = getTodayMovements();
   const todayTransfers = getTodayTransfers();
@@ -91,7 +62,7 @@ export default function EstoqueManagerPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 border-b-2 border-slate-700 bg-slate-800/30 px-4 overflow-x-auto">
-        {(['dashboard', 'settings', 'movements', 'transfers', 'inbound'] as const).map(tab => (
+        {(['dashboard', 'movements', 'transfers', 'inbound'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -102,7 +73,7 @@ export default function EstoqueManagerPage() {
             }`}
           >
             {tab === 'dashboard' && '📊 Dashboard'}
-            {tab === 'settings' && '⚙️ Configurações'}
+            {tab === 'movements' && '📈 Movimentações'}
             {tab === 'movements' && '📈 Movimentações'}
             {tab === 'transfers' && '🔄 Transferências'}
             {tab === 'inbound' && '📥 Entradas'}
@@ -210,63 +181,6 @@ export default function EstoqueManagerPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'settings' && (
-          <div className="space-y-6">
-            <div className="bg-slate-700/50 border-2 border-slate-600 rounded-lg p-6">
-              <h3 className="text-white font-bold text-lg mb-6">Pesos Unitários por Produto</h3>
-              
-              <div className="space-y-4">
-                {products.map(product => (
-                  <div key={product.id} className="flex items-center gap-4 pb-4 border-b border-slate-600 last:border-0">
-                    <div className="flex-1">
-                      <p className="text-white font-semibold">{product.name}</p>
-                      <p className="text-slate-400 text-xs">{product.category}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={editingWeights[product.id] || 0}
-                        onChange={(e) => handleWeightChange(product.id, parseInt(e.target.value) || 0)}
-                        className="w-24 px-3 py-2 bg-slate-800 border-2 border-slate-600 rounded-lg text-white font-bold text-right"
-                      />
-                      <span className="text-slate-300 font-semibold">kg</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 flex gap-3">
-                <IndustrialButton
-                  size="lg"
-                  variant="secondary"
-                  onClick={() => {
-                    setEditingWeights(
-                      Object.fromEntries(
-                        unitWeights.map(uw => [uw.productId, uw.unitWeight])
-                      )
-                    );
-                    setHasChanges(false);
-                  }}
-                  disabled={!hasChanges}
-                  className="flex-1"
-                >
-                  Descartar
-                </IndustrialButton>
-                <IndustrialButton
-                  size="lg"
-                  variant="success"
-                  onClick={handleSaveWeights}
-                  disabled={!hasChanges}
-                  icon={<Save className="w-6 h-6" />}
-                  className="flex-1"
-                >
-                  Salvar Alterações
-                </IndustrialButton>
               </div>
             </div>
           </div>
