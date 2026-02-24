@@ -1,19 +1,13 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
+import { useUserManagement } from '@/contexts/UserManagementContext';
 import { IndustrialButton } from '@/components/IndustrialButton';
-import { Smartphone, Monitor } from 'lucide-react';
-
-const USERS = [
-  { id: 'op1', name: 'Operador 1', pin: '1111', role: 'operator' },
-  { id: 'op2', name: 'Operador 2', pin: '2222', role: 'operator' },
-  { id: 'mgr', name: 'Gerente', pin: '1234', role: 'manager' },
-];
 
 export default function EstoqueLogin() {
   const [, setLocation] = useLocation();
+  const { users, authenticateUser } = useUserManagement();
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-  const [currentUser, setCurrentUser] = useState<typeof USERS[0] | null>(null);
 
   const handleKeypad = (digit: string) => {
     if (pin.length < 4) {
@@ -25,17 +19,28 @@ export default function EstoqueLogin() {
     setPin(pin.slice(0, -1));
   };
 
-  const handleLogin = (path: string) => {
-    const user = USERS.find(u => u.pin === pin);
+  const handleLogin = () => {
+    const user = authenticateUser(pin);
     if (user) {
       setError('');
       setPin('');
-      setCurrentUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      setLocation(path);
+      // Route based on role
+      if (user.role === 'admin') {
+        setLocation('/admin');
+      } else if (user.role === 'gerente') {
+        setLocation('/manager');
+      } else {
+        setLocation('/operator');
+      }
     } else {
       setError('PIN incorreto');
       setPin('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleLogin();
     }
   };
 
@@ -51,18 +56,25 @@ export default function EstoqueLogin() {
       {/* Main Container */}
       <div className="w-full max-w-md">
         {/* User Info */}
-      <div className="mb-6 bg-slate-800/50 border-2 border-slate-700 rounded-lg p-4 text-center">
-        <p className="text-slate-400 text-xs font-bold mb-2">USUÁRIOS DISPONÍVEIS:</p>
-        <div className="space-y-1 text-sm">
-          {USERS.map(u => (
-            <p key={u.id} className="text-slate-300">
-              {u.name} <span className="text-slate-500">({u.pin})</span>
-            </p>
-          ))}
+        <div className="mb-6 bg-slate-800/50 border-2 border-slate-700 rounded-lg p-4 text-center">
+          <p className="text-slate-400 text-xs font-bold mb-3">USUÁRIOS DISPONÍVEIS:</p>
+          <div className="space-y-2 text-sm max-h-32 overflow-y-auto">
+            {users.map(u => (
+              <p key={u.id} className="text-slate-300">
+                <span className="font-semibold">{u.name}</span>
+                <br />
+                <span className="text-slate-500 text-xs">
+                  {u.role === 'admin' && '🔐 Admin'} 
+                  {u.role === 'gerente' && '👔 Gerente'} 
+                  {u.role === 'operador' && '👷 Operador'}
+                  {' '}• PIN: {u.pin}
+                </span>
+              </p>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* PIN Input */}
+        {/* PIN Input */}
         <div className="mb-8 bg-slate-800/50 border-3 border-slate-700 rounded-2xl p-8">
           <label className="block text-white text-sm font-bold mb-4">Digite seu PIN</label>
           <div className="bg-black/50 rounded-xl p-6 mb-6 border-3 border-white/20">
@@ -72,19 +84,19 @@ export default function EstoqueLogin() {
           </div>
 
           {/* Numeric Keypad */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-6">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
               <button
                 key={num}
                 onClick={() => handleKeypad(num.toString())}
-                className="p-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg transition-colors text-2xl min-h-[56px]"
+                className="p-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg transition-colors text-xl min-h-[56px]"
               >
                 {num}
               </button>
             ))}
             <button
               onClick={() => handleKeypad('0')}
-              className="col-span-2 p-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg transition-colors text-2xl min-h-[56px]"
+              className="col-span-2 p-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg transition-colors text-xl min-h-[56px]"
             >
               0
             </button>
@@ -98,37 +110,27 @@ export default function EstoqueLogin() {
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-900/50 border-2 border-red-500 rounded-lg p-3 mb-6">
+            <div className="bg-red-900/50 border-2 border-red-500 rounded-lg p-4 mb-6">
               <p className="text-red-300 text-sm font-semibold">⚠️ {error}</p>
             </div>
           )}
 
-          {/* Info */}
-          <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-3">
-            <p className="text-slate-300 text-xs text-center">Demo PIN: <span className="font-bold">1234</span></p>
-          </div>
+          {/* Login Button */}
+          <IndustrialButton
+            size="lg"
+            variant="success"
+            onClick={handleLogin}
+            className="w-full"
+            onKeyPress={handleKeyPress}
+          >
+            Entrar
+          </IndustrialButton>
         </div>
 
-        {/* Role Selection */}
-        <div className="space-y-3">
-          <IndustrialButton
-            size="lg"
-            variant="primary"
-            onClick={() => handleLogin('/estoque-operator')}
-            icon={<Smartphone className="w-5 h-5" />}
-            fullWidth
-          >
-            Operador de Chão
-          </IndustrialButton>
-          <IndustrialButton
-            size="lg"
-            variant="secondary"
-            onClick={() => handleLogin('/estoque-manager')}
-            icon={<Monitor className="w-5 h-5" />}
-            fullWidth
-          >
-            Gerente
-          </IndustrialButton>
+        {/* Footer Info */}
+        <div className="text-center text-slate-500 text-xs">
+          <p>Sistema de Controle de Inventário</p>
+          <p>Fábrica de PVC</p>
         </div>
       </div>
     </div>

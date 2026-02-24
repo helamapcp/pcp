@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useEstoque } from '@/contexts/EstoqueContext';
+import { useUserManagement } from '@/contexts/UserManagementContext';
 import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { IndustrialButton } from '@/components/IndustrialButton';
@@ -14,13 +15,24 @@ const SECTORS: Sector[] = ['CD', 'Fábrica', 'PMP', 'PCP'];
 
 export default function EstoqueOperatorPage() {
   const [, setLocation] = useLocation();
+  const { currentUser, setCurrentUser } = useUserManagement();
   const { products, getAllCategories, recordStockCount, recordInboundReceiving, recordTransfer, getPendingSeparations, completeSeparation } = useEstoque();
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setLocation('/login');
+  };
   const [activeTab, setActiveTab] = useState<'estoque' | 'entrada' | 'movimentacao' | 'separacao'>('estoque');
   const [selectedSector, setSelectedSector] = useState<Sector>('CD');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCountModal, setShowCountModal] = useState(false);
   const [showInboundModal, setShowInboundModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+
+  if (!currentUser) {
+    setLocation('/login');
+    return null;
+  }
 
   const categories = getAllCategories();
   const pendingSeparations = getPendingSeparations();
@@ -89,10 +101,10 @@ export default function EstoqueOperatorPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-black text-white">📱 Operador</h1>
-            <p className="text-slate-300 text-sm">Estoque & Movimentação</p>
+            <p className="text-slate-300 text-sm">{currentUser.name} • Estoque & Movimentação</p>
           </div>
           <button
-            onClick={() => setLocation('/login')}
+            onClick={handleLogout}
             className="p-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg transition-colors"
             title="Sair"
           >
