@@ -6,7 +6,7 @@ export interface User {
   id: string;
   name: string;
   username: string;
-  pin: string;
+  password: string;
   role: UserRole;
   createdAt: string;
 }
@@ -14,12 +14,12 @@ export interface User {
 interface UserManagementContextType {
   users: User[];
   currentUser: User | null;
-  addUser: (name: string, username: string, pin: string, role: UserRole) => void;
-  updateUser: (id: string, name: string, username: string, pin: string, role: UserRole) => void;
+  addUser: (name: string, username: string, password: string, role: UserRole) => void;
+  updateUser: (id: string, name: string, username: string, password: string, role: UserRole) => void;
   deleteUser: (id: string) => void;
-  authenticateUser: (pin: string) => User | null;
+  authenticateUser: (username: string, password: string) => User | null;
   setCurrentUser: (user: User | null) => void;
-  getUserByPin: (pin: string) => User | null;
+  getUserByUsername: (username: string) => User | null;
 }
 
 const UserManagementContext = createContext<UserManagementContextType | undefined>(undefined);
@@ -29,7 +29,7 @@ const DEFAULT_USERS: User[] = [
     id: 'admin-001',
     name: 'Super Admin',
     username: 'admin',
-    pin: '1234',
+    password: 'password123',
     role: 'admin',
     createdAt: new Date().toISOString(),
   },
@@ -37,7 +37,7 @@ const DEFAULT_USERS: User[] = [
     id: 'op-001',
     name: 'Operador 1',
     username: 'operador1',
-    pin: '1111',
+    password: 'op123',
     role: 'operador',
     createdAt: new Date().toISOString(),
   },
@@ -45,7 +45,7 @@ const DEFAULT_USERS: User[] = [
     id: 'op-002',
     name: 'Operador 2',
     username: 'operador2',
-    pin: '2222',
+    password: 'op123',
     role: 'operador',
     createdAt: new Date().toISOString(),
   },
@@ -53,7 +53,7 @@ const DEFAULT_USERS: User[] = [
     id: 'mgr-001',
     name: 'Gerente',
     username: 'gerente',
-    pin: '3333',
+    password: 'mgr123',
     role: 'gerente',
     createdAt: new Date().toISOString(),
   },
@@ -63,22 +63,22 @@ export function UserManagementProvider({ children }: { children: React.ReactNode
   const [users, setUsers] = useState<User[]>(DEFAULT_USERS);
   const [currentUser, setCurrentUserState] = useState<User | null>(null);
 
-  const addUser = useCallback((name: string, username: string, pin: string, role: UserRole) => {
+  const addUser = useCallback((name: string, username: string, password: string, role: UserRole) => {
     const newUser: User = {
       id: `user-${Date.now()}`,
       name,
       username,
-      pin,
+      password,
       role,
       createdAt: new Date().toISOString(),
     };
     setUsers(prev => [...prev, newUser]);
   }, []);
 
-  const updateUser = useCallback((id: string, name: string, username: string, pin: string, role: UserRole) => {
+  const updateUser = useCallback((id: string, name: string, username: string, password: string, role: UserRole) => {
     setUsers(prev =>
       prev.map(user =>
-        user.id === id ? { ...user, name, username, pin, role } : user
+        user.id === id ? { ...user, name, username, password, role } : user
       )
     );
   }, []);
@@ -87,8 +87,8 @@ export function UserManagementProvider({ children }: { children: React.ReactNode
     setUsers(prev => prev.filter(user => user.id !== id));
   }, []);
 
-  const authenticateUser = useCallback((pin: string): User | null => {
-    const user = users.find(u => u.pin === pin);
+  const authenticateUser = useCallback((username: string, password: string): User | null => {
+    const user = users.find(u => u.username === username && u.password === password);
     if (user) {
       setCurrentUserState(user);
       localStorage.setItem('currentUser', JSON.stringify(user));
@@ -106,8 +106,8 @@ export function UserManagementProvider({ children }: { children: React.ReactNode
     }
   }, []);
 
-  const getUserByPin = useCallback((pin: string): User | null => {
-    return users.find(u => u.pin === pin) || null;
+  const getUserByUsername = useCallback((username: string): User | null => {
+    return users.find(u => u.username === username) || null;
   }, [users]);
 
   const value: UserManagementContextType = {
@@ -118,7 +118,7 @@ export function UserManagementProvider({ children }: { children: React.ReactNode
     deleteUser,
     authenticateUser,
     setCurrentUser,
-    getUserByPin,
+    getUserByUsername,
   };
 
   return (

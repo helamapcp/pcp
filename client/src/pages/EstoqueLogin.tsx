@@ -6,24 +6,16 @@ import { IndustrialButton } from '@/components/IndustrialButton';
 export default function EstoqueLogin() {
   const [, setLocation] = useLocation();
   const { users, authenticateUser } = useUserManagement();
-  const [pin, setPin] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleKeypad = (digit: string) => {
-    if (pin.length < 4) {
-      setPin(pin + digit);
-    }
-  };
-
-  const handleBackspace = () => {
-    setPin(pin.slice(0, -1));
-  };
-
   const handleLogin = () => {
-    const user = authenticateUser(pin);
+    const user = authenticateUser(username, password);
     if (user) {
       setError('');
-      setPin('');
+      setUsername('');
+      setPassword('');
       // Route based on role
       if (user.role === 'admin') {
         setLocation('/admin');
@@ -33,8 +25,8 @@ export default function EstoqueLogin() {
         setLocation('/operator');
       }
     } else {
-      setError('PIN incorreto');
-      setPin('');
+      setError('Usuário ou senha incorretos');
+      setPassword('');
     }
   };
 
@@ -67,46 +59,34 @@ export default function EstoqueLogin() {
                   {u.role === 'admin' && '🔐 Admin'} 
                   {u.role === 'gerente' && '👔 Gerente'} 
                   {u.role === 'operador' && '👷 Operador'}
-                  {' '}• PIN: {u.pin}
+                  {' '}• User: {u.username}
                 </span>
               </p>
             ))}
           </div>
         </div>
 
-        {/* PIN Input */}
+        {/* Login Form */}
         <div className="mb-8 bg-slate-800/50 border-3 border-slate-700 rounded-2xl p-8">
-          <label className="block text-white text-sm font-bold mb-4">Digite seu PIN</label>
-          <div className="bg-black/50 rounded-xl p-6 mb-6 border-3 border-white/20">
-            <div className="text-5xl font-bold text-center text-white font-mono tracking-widest">
-              {'●'.repeat(pin.length)}{'○'.repeat(4 - pin.length)}
-            </div>
-          </div>
+          <label className="block text-white text-sm font-bold mb-4">Usuário</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Digite seu usuário"
+            className="w-full px-4 py-3 bg-slate-700 border-2 border-slate-600 rounded-lg text-white placeholder-slate-500 font-semibold mb-6 min-h-[48px]"
+          />
 
-          {/* Numeric Keypad */}
-          <div className="grid grid-cols-3 gap-2 mb-6">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-              <button
-                key={num}
-                onClick={() => handleKeypad(num.toString())}
-                className="p-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg transition-colors text-xl min-h-[56px]"
-              >
-                {num}
-              </button>
-            ))}
-            <button
-              onClick={() => handleKeypad('0')}
-              className="col-span-2 p-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg transition-colors text-xl min-h-[56px]"
-            >
-              0
-            </button>
-            <button
-              onClick={handleBackspace}
-              className="p-4 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold rounded-lg transition-colors text-lg min-h-[56px]"
-            >
-              ← DEL
-            </button>
-          </div>
+          <label className="block text-white text-sm font-bold mb-4">Senha</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Digite sua senha"
+            className="w-full px-4 py-3 bg-slate-700 border-2 border-slate-600 rounded-lg text-white placeholder-slate-500 font-semibold mb-6 min-h-[48px]"
+          />
 
           {/* Error Message */}
           {error && (
@@ -121,7 +101,6 @@ export default function EstoqueLogin() {
             variant="success"
             onClick={handleLogin}
             className="w-full"
-            onKeyPress={handleKeyPress}
           >
             Entrar
           </IndustrialButton>
