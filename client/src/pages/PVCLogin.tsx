@@ -18,11 +18,11 @@ export default function PVCLogin() {
     setPin(pin.slice(0, -1));
   };
 
-  const handleLogin = (role: 'operator' | 'manager') => {
+  const handleLogin = (path: string) => {
     if (pin === '1234') {
       setError('');
       setPin('');
-      setLocation(role === 'operator' ? '/pvc-operator' : '/pvc-manager');
+      setLocation(path);
     } else {
       setError('PIN incorreto. Use 1234');
       setPin('');
@@ -87,26 +87,59 @@ export default function PVCLogin() {
           </div>
         </div>
 
-        {/* Role Selection */}
-        <div className="space-y-3">
-          <IndustrialButton
-            size="xl"
-            variant="primary"
-            onClick={() => handleLogin('operator')}
-            icon={<Smartphone className="w-6 h-6" />}
-            fullWidth
-          >
-            Operador de Chão
-          </IndustrialButton>
-          <IndustrialButton
-            size="xl"
-            variant="secondary"
-            onClick={() => handleLogin('manager')}
-            icon={<Monitor className="w-6 h-6" />}
-            fullWidth
-          >
-            Gerente de PCP
-          </IndustrialButton>
+        {/* System Selection */}
+        <div className="space-y-6">
+          {/* Legacy System */}
+          <div>
+            <p className="text-slate-400 text-xs text-center font-bold mb-3 uppercase tracking-widest">Sistema Legado (Big Bag)</p>
+            <div className="space-y-3">
+              <IndustrialButton
+                size="lg"
+                variant="primary"
+                onClick={() => handleLogin('/pvc-operator')}
+                icon={<Smartphone className="w-5 h-5" />}
+                fullWidth
+              >
+                Operador de Chão
+              </IndustrialButton>
+              <IndustrialButton
+                size="lg"
+                variant="secondary"
+                onClick={() => handleLogin('/pvc-manager')}
+                icon={<Monitor className="w-5 h-5" />}
+                fullWidth
+              >
+                Gerente de PCP
+              </IndustrialButton>
+            </div>
+          </div>
+
+          {/* Snapshot System */}
+          <div className="border-t-2 border-slate-600 pt-6">
+            <p className="text-purple-400 text-xs text-center font-bold mb-3 uppercase tracking-widest">Novo Sistema (Snapshots)</p>
+            <div className="space-y-3">
+              <IndustrialButton
+                size="lg"
+                variant="primary"
+                onClick={() => handleLogin('/snapshot-operator')}
+                icon={<Smartphone className="w-5 h-5" />}
+                fullWidth
+                className="bg-purple-600 hover:bg-purple-700 active:bg-purple-800"
+              >
+                Operador (Snapshots)
+              </IndustrialButton>
+              <IndustrialButton
+                size="lg"
+                variant="secondary"
+                onClick={() => handleLogin('/snapshot-manager')}
+                icon={<Monitor className="w-5 h-5" />}
+                fullWidth
+                className="bg-purple-700 hover:bg-purple-800 active:bg-purple-900"
+              >
+                Gerente (Snapshots)
+              </IndustrialButton>
+            </div>
+          </div>
         </div>
       </div>
     </div>

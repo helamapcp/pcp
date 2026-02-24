@@ -5,9 +5,12 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { PVCInventoryProvider } from "./contexts/PVCInventoryContext";
+import { SnapshotInventoryProvider } from "./contexts/SnapshotInventoryContext";
 import PVCLogin from "./pages/PVCLogin";
 import PVCOperatorDashboard from "./pages/PVCOperatorDashboard";
 import PVCManagerDashboard from "./pages/PVCManagerDashboard";
+import SnapshotOperatorPage from "./pages/SnapshotOperatorPage";
+import SnapshotManagerPage from "./pages/SnapshotManagerPage";
 
 
 function Router() {
@@ -17,6 +20,8 @@ function Router() {
       <Route path="/pvc-login" component={PVCLogin} />
       <Route path="/pvc-operator" component={PVCOperatorDashboard} />
       <Route path="/pvc-manager" component={PVCManagerDashboard} />
+      <Route path="/snapshot-operator" component={SnapshotOperatorPage} />
+      <Route path="/snapshot-manager" component={SnapshotManagerPage} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -24,23 +29,19 @@ function Router() {
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider
         defaultTheme="light"
-        // switchable
       >
         <PVCInventoryProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
+          <SnapshotInventoryProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </SnapshotInventoryProvider>
         </PVCInventoryProvider>
       </ThemeProvider>
     </ErrorBoundary>
