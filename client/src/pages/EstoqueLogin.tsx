@@ -1,42 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { useUserManagement } from '@/contexts/UserManagementContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { IndustrialButton } from '@/components/IndustrialButton';
-import { Lock, User } from 'lucide-react';
+import { Lock, User, Loader2 } from 'lucide-react';
 
 export default function EstoqueLogin() {
   const [, setLocation] = useLocation();
-  const { authenticateUser } = useUserManagement();
-  const [username, setUsername] = useState('');
+  const { user, loading: authLoading, signIn } = useAuth();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
-  const handleLogin = () => {
-    if (!username.trim() || !password.trim()) {
+  useEffect(() => {
+    if (user && !authLoading) {
+      if (user.role === 'admin') setLocation('/admin');
+      else if (user.role === 'gerente') setLocation('/manager');
+      else setLocation('/operator');
+    }
+  }, [user, authLoading, setLocation]);
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
       setError('Preencha todos os campos');
       return;
     }
-    const user = authenticateUser(username, password);
-    if (user) {
-      setError('');
-      setUsername('');
-      setPassword('');
-      if (user.role === 'admin') {
-        setLocation('/admin');
-      } else if (user.role === 'gerente') {
-        setLocation('/manager');
-      } else {
-        setLocation('/operator');
-      }
-    } else {
-      setError('Usuário ou senha incorretos');
+    setLoading(true);
+    setError('');
+    const result = await signIn(email, password);
+    if (result.error) {
+      setError('Credenciais inválidas. Verifique e-mail e senha.');
       setPassword('');
     }
+    setLoading(false);
+  };
+
+  const handleSeedAdmin = async () => {
+    setSeeding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('seed-admin');
+      if (error) throw error;
+      setError('');
+      setEmail('admin@pvc-pcp.local');
+      setPassword('admin_password_2026');
+      alert(`✅ Admin criado!\n\nE-mail: admin@pvc-pcp.local\nSenha: admin_password_2026\n\nDados de produtos e categorias também foram criados.`);
+    } catch (err: any) {
+      setError(`Erro ao criar admin: ${err.message}`);
+    }
+    setSeeding(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleLogin();
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
@@ -56,15 +82,15 @@ export default function EstoqueLogin() {
           <div>
             <label className="block text-foreground text-sm font-bold mb-2">
               <User className="w-4 h-4 inline-block mr-1 mb-0.5" />
-              Usuário
+              E-mail
             </label>
             <input
-              type="text"
-              value={username}
-              onChange={(e) => { setUsername(e.target.value); setError(''); }}
+              type="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(''); }}
               onKeyDown={handleKeyPress}
-              placeholder="Digite seu usuário"
-              autoComplete="username"
+              placeholder="seu@email.com"
+              autoComplete="email"
               className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target focus:border-primary focus:ring-2 focus:ring-ring transition-colors"
             />
           </div>
@@ -95,28 +121,28 @@ export default function EstoqueLogin() {
             size="xl"
             variant="primary"
             onClick={handleLogin}
+            disabled={loading}
           >
-            Entrar
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Entrar'}
           </IndustrialButton>
         </div>
 
-        {/* Demo Info (dev only) */}
+        {/* Seed Admin Button */}
         <div className="mt-6 bg-card/50 border border-border rounded-lg p-4">
-          <p className="text-muted-foreground text-xs text-center font-bold mb-2">DEMO - CREDENCIAIS</p>
-          <div className="grid grid-cols-3 gap-2 text-xs text-center">
-            <div className="bg-secondary rounded p-2">
-              <p className="text-foreground font-bold">Admin</p>
-              <p className="text-muted-foreground">admin / password123</p>
-            </div>
-            <div className="bg-secondary rounded p-2">
-              <p className="text-foreground font-bold">Gerente</p>
-              <p className="text-muted-foreground">gerente / mgr123</p>
-            </div>
-            <div className="bg-secondary rounded p-2">
-              <p className="text-foreground font-bold">Operador</p>
-              <p className="text-muted-foreground">operador1 / op123</p>
-            </div>
-          </div>
+          <p className="text-muted-foreground text-xs text-center font-bold mb-3">PRIMEIRA VEZ? CRIE O ADMIN</p>
+          <IndustrialButton
+            size="md"
+            variant="secondary"
+            onClick={handleSeedAdmin}
+            disabled={seeding}
+            fullWidth
+          >
+            {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : '🔧 Criar Admin + Dados Iniciais'}
+          </IndustrialButton>
+          <p className="text-muted-foreground text-xs text-center mt-3">
+            Credenciais padrão:<br />
+            <span className="text-foreground font-bold">admin@pvc-pcp.local</span> / <span className="text-foreground font-bold">admin_password_2026</span>
+          </p>
         </div>
 
         <div className="text-center mt-6 text-muted-foreground text-xs">
