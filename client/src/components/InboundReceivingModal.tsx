@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Check, AlertTriangle } from 'lucide-react';
 import { IndustrialButton } from './IndustrialButton';
-import type { Product } from '@/contexts/EstoqueContext';
+import type { Product } from '@/hooks/useSupabaseData';
 
 interface InboundReceivingModalProps {
   isOpen: boolean;

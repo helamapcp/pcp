@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Check, AlertTriangle } from 'lucide-react';
 import { IndustrialButton } from './IndustrialButton';
 import { toast } from 'sonner';
-import type { Product, Sector } from '@/contexts/EstoqueContext';
+import type { Product, Sector } from '@/hooks/useSupabaseData';
 
 interface EstoqueCountModalProps {
   isOpen: boolean;

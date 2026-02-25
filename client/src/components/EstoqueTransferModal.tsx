@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { X, Check, ArrowRight, AlertTriangle } from 'lucide-react';
 import { IndustrialButton } from './IndustrialButton';
-import type { Product, Sector } from '@/contexts/EstoqueContext';
+import type { Product, Sector } from '@/hooks/useSupabaseData';
 
 interface EstoqueTransferModalProps {
   isOpen: boolean;
