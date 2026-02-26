@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { IndustrialButton } from '@/components/IndustrialButton';
 import { Lock, User, Loader2 } from 'lucide-react';
 
@@ -12,8 +11,6 @@ export default function EstoqueLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [seeding, setSeeding] = useState(false);
-
   useEffect(() => {
     if (user && !authLoading) {
       if (user.role === 'admin') setLocation('/admin');
@@ -37,20 +34,8 @@ export default function EstoqueLogin() {
     setLoading(false);
   };
 
-  const handleSeedAdmin = async () => {
-    setSeeding(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('seed-admin');
-      if (error) throw error;
-      setError('');
-      setEmail('admin@pvc-pcp.local');
-      setPassword('admin_password_2026');
-      alert(`✅ Admin criado!\n\nE-mail: admin@pvc-pcp.local\nSenha: admin_password_2026\n\nDados de produtos e categorias também foram criados.`);
-    } catch (err: any) {
-      setError(`Erro ao criar admin: ${err.message}`);
-    }
-    setSeeding(false);
-  };
+
+
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleLogin();
@@ -69,10 +54,10 @@ export default function EstoqueLogin() {
       {/* Header */}
       <div className="mb-10 text-center">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-2xl mb-4">
-          <span className="text-3xl font-black text-primary-foreground">PVC</span>
+          <span className="text-3xl font-black text-primary-foreground">INV</span>
         </div>
         <h1 className="text-4xl font-black text-foreground mb-1">ESTOQUE</h1>
-        <p className="text-muted-foreground text-base">Sistema de Inventário Industrial</p>
+        <p className="text-muted-foreground text-base">Gestão de Inventário e Controle de Estoque</p>
         <div className="h-1 w-16 bg-primary mx-auto mt-4 rounded-full"></div>
       </div>
 
@@ -127,26 +112,8 @@ export default function EstoqueLogin() {
           </IndustrialButton>
         </div>
 
-        {/* Seed Admin Button */}
-        <div className="mt-6 bg-card/50 border border-border rounded-lg p-4">
-          <p className="text-muted-foreground text-xs text-center font-bold mb-3">PRIMEIRA VEZ? CRIE O ADMIN</p>
-          <IndustrialButton
-            size="md"
-            variant="secondary"
-            onClick={handleSeedAdmin}
-            disabled={seeding}
-            fullWidth
-          >
-            {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : '🔧 Criar Admin + Dados Iniciais'}
-          </IndustrialButton>
-          <p className="text-muted-foreground text-xs text-center mt-3">
-            Credenciais padrão:<br />
-            <span className="text-foreground font-bold">admin@pvc-pcp.local</span> / <span className="text-foreground font-bold">admin_password_2026</span>
-          </p>
-        </div>
-
         <div className="text-center mt-6 text-muted-foreground text-xs">
-          <p>Sistema de Controle de Inventário • Fábrica de PVC</p>
+          <p>Sistema de Gestão de Inventário e Controle Operacional</p>
         </div>
       </div>
     </div>
