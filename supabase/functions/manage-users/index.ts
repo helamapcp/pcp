@@ -76,10 +76,10 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Assign role
+      // Assign role (upsert to avoid conflict with trigger)
       const { error: roleError } = await adminClient
         .from("user_roles")
-        .insert({ user_id: authData.user.id, role });
+        .upsert({ user_id: authData.user.id, role }, { onConflict: "user_id" });
 
       if (roleError) {
         return new Response(JSON.stringify({ error: roleError.message }), {
@@ -115,15 +115,10 @@ Deno.serve(async (req) => {
         .update({ username, full_name })
         .eq("id", userId);
 
-      // Update role
+      // Update role (upsert to avoid conflicts)
       await adminClient
         .from("user_roles")
-        .delete()
-        .eq("user_id", userId);
-
-      await adminClient
-        .from("user_roles")
-        .insert({ user_id: userId, role });
+        .upsert({ user_id: userId, role }, { onConflict: "user_id" });
 
       return new Response(
         JSON.stringify({ message: "User updated" }),
