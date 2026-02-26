@@ -5,6 +5,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Helper: always return 200 with { error } so supabase.functions.invoke can parse it
+function errorResponse(msg: string) {
+  return new Response(JSON.stringify({ error: msg }), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function okResponse(data: Record<string, unknown>) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -15,13 +30,9 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
 
-    // Verify caller is admin using their JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("No authorization header");
     }
 
     const callerClient = createClient(supabaseUrl, anonKey, {
@@ -31,13 +42,9 @@ Deno.serve(async (req) => {
 
     const { data: { user: caller }, error: callerError } = await callerClient.auth.getUser();
     if (callerError || !caller) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Unauthorized");
     }
 
-    // Check admin role using service role client
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -50,10 +57,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!roleData) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Admin access required");
     }
 
     const body = await req.json();
@@ -61,6 +65,16 @@ Deno.serve(async (req) => {
 
     if (action === "create") {
       const { email, password, username, full_name, role } = body;
+
+      // Validate required fields
+      if (!email || !password || !username || !full_name || !role) {
+        return errorResponse("Todos os campos são obrigatórios");
+      }
+
+      // Validate role
+      if (!["admin", "gerente", "operador"].includes(role)) {
+        return errorResponse("Role inválida. Use: admin, gerente ou operador");
+      }
 
       // Check if username already exists
       const { data: existingProfile } = await adminClient
@@ -70,10 +84,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (existingProfile) {
-        return new Response(JSON.stringify({ error: "Username já está em uso. Escolha outro." }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return errorResponse("Username já está em uso. Escolha outro.");
       }
 
       const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
@@ -85,31 +96,22 @@ Deno.serve(async (req) => {
 
       if (authError) {
         const msg = authError.message || "Erro ao criar usuário";
-        const isDuplicate = msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("already");
-        return new Response(JSON.stringify({ 
-          error: isDuplicate ? "Email ou username já cadastrado." : msg 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("duplicate")) {
+          return errorResponse("Este e-mail já está cadastrado.");
+        }
+        return errorResponse(msg);
       }
 
-      // Assign role (upsert to avoid conflict with trigger)
+      // Assign role
       const { error: roleError } = await adminClient
         .from("user_roles")
         .upsert({ user_id: authData.user.id, role }, { onConflict: "user_id" });
 
       if (roleError) {
-        return new Response(JSON.stringify({ error: roleError.message }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return errorResponse(roleError.message);
       }
 
-      return new Response(
-        JSON.stringify({ message: "User created", userId: authData.user.id }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return okResponse({ message: "User created", userId: authData.user.id });
     }
 
     if (action === "update") {
@@ -121,52 +123,34 @@ Deno.serve(async (req) => {
 
       const { error: authError } = await adminClient.auth.admin.updateUserById(userId, updateData);
       if (authError) {
-        return new Response(JSON.stringify({ error: authError.message }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return errorResponse(authError.message);
       }
 
-      // Update profile
       await adminClient
         .from("profiles")
         .update({ username, full_name })
         .eq("id", userId);
 
-      // Update role (upsert to avoid conflicts)
       await adminClient
         .from("user_roles")
         .upsert({ user_id: userId, role }, { onConflict: "user_id" });
 
-      return new Response(
-        JSON.stringify({ message: "User updated" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return okResponse({ message: "User updated" });
     }
 
     if (action === "delete") {
       const { userId } = body;
 
-      // Prevent self-delete
       if (userId === caller.id) {
-        return new Response(JSON.stringify({ error: "Cannot delete yourself" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return errorResponse("Não é possível deletar a si mesmo");
       }
 
       const { error: authError } = await adminClient.auth.admin.deleteUser(userId);
       if (authError) {
-        return new Response(JSON.stringify({ error: authError.message }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return errorResponse(authError.message);
       }
 
-      return new Response(
-        JSON.stringify({ message: "User deleted" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return okResponse({ message: "User deleted" });
     }
 
     if (action === "list") {
@@ -175,13 +159,9 @@ Deno.serve(async (req) => {
         .select("id, username, full_name, created_at");
 
       if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return errorResponse(error.message);
       }
 
-      // Get roles for all users
       const { data: roles } = await adminClient
         .from("user_roles")
         .select("user_id, role");
@@ -194,20 +174,11 @@ Deno.serve(async (req) => {
         role: roleMap[p.id] || "operador",
       }));
 
-      return new Response(
-        JSON.stringify({ users }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return okResponse({ users });
     }
 
-    return new Response(JSON.stringify({ error: "Invalid action" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse("Invalid action");
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse(error.message || "Erro interno do servidor");
   }
 });
