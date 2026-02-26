@@ -62,6 +62,20 @@ Deno.serve(async (req) => {
     if (action === "create") {
       const { email, password, username, full_name, role } = body;
 
+      // Check if username already exists
+      const { data: existingProfile } = await adminClient
+        .from("profiles")
+        .select("id")
+        .eq("username", username)
+        .maybeSingle();
+
+      if (existingProfile) {
+        return new Response(JSON.stringify({ error: "Username já está em uso. Escolha outro." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
         email,
         password,
@@ -70,7 +84,11 @@ Deno.serve(async (req) => {
       });
 
       if (authError) {
-        return new Response(JSON.stringify({ error: authError.message }), {
+        const msg = authError.message || "Erro ao criar usuário";
+        const isDuplicate = msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("already");
+        return new Response(JSON.stringify({ 
+          error: isDuplicate ? "Email ou username já cadastrado." : msg 
+        }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
