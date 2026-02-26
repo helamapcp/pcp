@@ -93,29 +93,57 @@ export default function AdminPanel() {
 
   // USER MANAGEMENT
   const handleAddUser = async () => {
-    if (!userFormData.name || !userFormData.email || !userFormData.password) return;
+    if (!userFormData.name || !userFormData.email || !userFormData.password) {
+      toast.error('Preencha todos os campos: Nome, E-mail e Senha');
+      return;
+    }
+    if (userFormData.password.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
     setUserLoading(true);
 
-    const action = editingUserId ? 'update' : 'create';
-    const body: any = {
-      action,
-      username: userFormData.email.split('@')[0],
-      full_name: userFormData.name,
-      email: userFormData.email,
-      password: userFormData.password,
-      role: userFormData.role,
-    };
-    if (editingUserId) body.userId = editingUserId;
+    try {
+      const action = editingUserId ? 'update' : 'create';
+      const body: any = {
+        action,
+        username: userFormData.email.split('@')[0],
+        full_name: userFormData.name,
+        email: userFormData.email,
+        password: userFormData.password,
+        role: userFormData.role,
+      };
+      if (editingUserId) body.userId = editingUserId;
 
-    const { data, error } = await supabase.functions.invoke('manage-users', { body });
-    if (error || data?.error) {
-      toast.error(data?.error || error?.message || 'Erro ao salvar usuário');
-    } else {
-      toast.success(editingUserId ? 'Usuário atualizado!' : 'Usuário criado!');
-      setShowUserForm(false);
-      setEditingUserId(null);
-      setUserFormData({ name: '', email: '', password: '', role: 'operador' });
-      fetchUsers();
+      const { data, error } = await supabase.functions.invoke('manage-users', { body });
+
+      if (error) {
+        const msg = error.message || 'Erro de conexão com o servidor';
+        if (msg.includes('already registered') || msg.includes('already exists')) {
+          toast.error('Este e-mail já está cadastrado no sistema');
+        } else if (msg.includes('weak_password') || msg.includes('password')) {
+          toast.error('Senha muito fraca. Use pelo menos 6 caracteres');
+        } else {
+          toast.error(`Erro no servidor: ${msg}`);
+        }
+      } else if (data?.error) {
+        const errMsg = data.error;
+        if (errMsg.includes('already registered') || errMsg.includes('already exists')) {
+          toast.error('Este e-mail já está cadastrado no sistema');
+        } else if (errMsg.includes('Admin access required')) {
+          toast.error('Acesso negado: apenas administradores podem gerenciar usuários');
+        } else {
+          toast.error(`Falha: ${errMsg}`);
+        }
+      } else {
+        toast.success(editingUserId ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!');
+        setShowUserForm(false);
+        setEditingUserId(null);
+        setUserFormData({ name: '', email: '', password: '', role: 'operador' });
+        fetchUsers();
+      }
+    } catch (e: any) {
+      toast.error('Erro inesperado. Verifique sua conexão e tente novamente.');
     }
     setUserLoading(false);
   };
