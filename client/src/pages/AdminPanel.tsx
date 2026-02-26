@@ -38,7 +38,7 @@ export default function AdminPanel() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [showUserForm, setShowUserForm] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [userFormData, setUserFormData] = useState({ name: '', email: '', password: '', role: 'operador' as AppRole });
+  const [userFormData, setUserFormData] = useState({ name: '', username: '', email: '', password: '', role: 'operador' as AppRole });
   const [userLoading, setUserLoading] = useState(false);
 
   // Categories state
@@ -107,7 +107,7 @@ export default function AdminPanel() {
       const action = editingUserId ? 'update' : 'create';
       const body: any = {
         action,
-        username: userFormData.email.split('@')[0],
+        username: userFormData.username || userFormData.email.split('@')[0],
         full_name: userFormData.name,
         email: userFormData.email,
         password: userFormData.password,
@@ -139,7 +139,7 @@ export default function AdminPanel() {
         toast.success(editingUserId ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!');
         setShowUserForm(false);
         setEditingUserId(null);
-        setUserFormData({ name: '', email: '', password: '', role: 'operador' });
+        setUserFormData({ name: '', username: '', email: '', password: '', role: 'operador' });
         fetchUsers();
       }
     } catch (e: any) {
@@ -149,7 +149,7 @@ export default function AdminPanel() {
   };
 
   const handleEditUser = (u: UserItem) => {
-    setUserFormData({ name: u.full_name, email: '', password: '', role: u.role });
+    setUserFormData({ name: u.full_name, username: u.username, email: '', password: '', role: u.role });
     setEditingUserId(u.id);
     setShowUserForm(true);
   };
@@ -273,7 +273,7 @@ export default function AdminPanel() {
         {activeTab === 'users' && (
           <div>
             <div className="mb-6">
-              <IndustrialButton size="lg" variant="success" onClick={() => { setEditingUserId(null); setUserFormData({ name: '', email: '', password: '', role: 'operador' }); setShowUserForm(true); }} icon={<Plus className="w-6 h-6" />}>
+              <IndustrialButton size="lg" variant="success" onClick={() => { setEditingUserId(null); setUserFormData({ name: '', username: '', email: '', password: '', role: 'operador' }); setShowUserForm(true); }} icon={<Plus className="w-6 h-6" />}>
                 Adicionar Usuário
               </IndustrialButton>
             </div>
@@ -290,6 +290,8 @@ export default function AdminPanel() {
                   <div className="p-6 space-y-4">
                     <input type="text" value={userFormData.name} onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
                       placeholder="Nome Completo" className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
+                    <input type="text" value={userFormData.username} onChange={(e) => setUserFormData({ ...userFormData, username: e.target.value })}
+                      placeholder="Username (login)" className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
                     <input type="email" value={userFormData.email} onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
                       placeholder="E-mail" className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
                     <input type="password" value={userFormData.password} onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
