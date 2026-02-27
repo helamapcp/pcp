@@ -978,6 +978,18 @@ export type Database = {
       }
     }
     Functions: {
+      admin_stock_adjustment: {
+        Args: {
+          p_justification: string
+          p_location_code: string
+          p_new_quantity: number
+          p_new_total_kg: number
+          p_product_id: string
+          p_user_id: string
+          p_user_name: string
+        }
+        Returns: Json
+      }
       confirm_inventory_count: {
         Args: {
           p_count_id: string

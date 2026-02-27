@@ -22,7 +22,7 @@ export default function AdminPanel() {
   const [, setLocation] = useLocation();
   const { user, signOut } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'users' | 'products' | 'formulations' | 'locations'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'products' | 'formulations' | 'locations' | 'stock-adjust'>('users');
 
   // Users
   const [users, setUsers] = useState<UserItem[]>([]);
@@ -288,6 +288,7 @@ export default function AdminPanel() {
           { id: 'products' as const, label: '📦 Produtos' },
           { id: 'formulations' as const, label: '🧪 Formulações' },
           { id: 'locations' as const, label: '📍 Locais' },
+          { id: 'stock-adjust' as const, label: '⚖️ Ajuste Estoque' },
         ]).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`px-5 py-4 font-bold transition-colors whitespace-nowrap touch-target ${
@@ -448,8 +449,36 @@ export default function AdminPanel() {
             {showFormulationForm && (
               <Modal title={editingFormulationId ? '✏️ Editar Formulação' : '➕ Nova Formulação'} onClose={() => { setShowFormulationForm(false); setEditingFormulationId(null); }}>
                 <Input label="Nome" value={formulationFormData.name} onChange={e => setFormulationFormData({ ...formulationFormData, name: e.target.value })} />
-                <Input label="Produto Final" value={formulationFormData.final_product} onChange={e => setFormulationFormData({ ...formulationFormData, final_product: e.target.value })} placeholder="Ex: Telha, Forro" />
-                <Input label="Máquina" value={formulationFormData.machine} onChange={e => setFormulationFormData({ ...formulationFormData, machine: e.target.value })} placeholder="Ex: Misturador 2" />
+                <div>
+                  <label className="text-foreground font-bold text-xs mb-1 block">Produto Final</label>
+                  <input
+                    list="final-products-list"
+                    value={formulationFormData.final_product}
+                    onChange={e => setFormulationFormData({ ...formulationFormData, final_product: e.target.value })}
+                    placeholder="Ex: Telha, Forro"
+                    className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target"
+                  />
+                  <datalist id="final-products-list">
+                    {[...new Set(formulations.map(f => f.final_product))].map(fp => (
+                      <option key={fp} value={fp} />
+                    ))}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="text-foreground font-bold text-xs mb-1 block">Máquina</label>
+                  <input
+                    list="machines-list"
+                    value={formulationFormData.machine}
+                    onChange={e => setFormulationFormData({ ...formulationFormData, machine: e.target.value })}
+                    placeholder="Ex: Misturador 2"
+                    className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target"
+                  />
+                  <datalist id="machines-list">
+                    {[...new Set(formulations.map(f => f.machine))].map(m => (
+                      <option key={m} value={m} />
+                    ))}
+                  </datalist>
+                </div>
                 <Input label="Peso por batida (kg)" type="number" value={formulationFormData.weight_per_batch} onChange={e => setFormulationFormData({ ...formulationFormData, weight_per_batch: e.target.value })} />
                 <div className="flex gap-3 pt-4">
                   <IndustrialButton size="lg" variant="secondary" onClick={() => setShowFormulationForm(false)} className="flex-1">Cancelar</IndustrialButton>
@@ -515,6 +544,19 @@ export default function AdminPanel() {
               </div>
             ))}
             {locations.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhum local cadastrado</p>}
+          </div>
+        )}
+
+        {activeTab === 'stock-adjust' && (
+          <div>
+            <div className="bg-destructive/10 border-2 border-destructive/30 rounded-lg p-4 mb-4">
+              <p className="text-destructive font-bold text-sm flex items-center gap-2">
+                ⚠️ Ajuste direto de estoque. Use com cuidado — todas as alterações são auditadas.
+              </p>
+            </div>
+            <IndustrialButton size="lg" variant="primary" onClick={() => setLocation('/admin/stock-adjustment')} icon={<Edit2 className="w-5 h-5" />}>
+              Abrir Ferramenta de Ajuste
+            </IndustrialButton>
           </div>
         )}
       </div>

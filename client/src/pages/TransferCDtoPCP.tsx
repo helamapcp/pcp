@@ -368,10 +368,13 @@ export default function TransferCDtoPCP() {
                   <div>
                     <label className="text-muted-foreground text-xs font-bold">Quantidade</label>
                     <input
-                      type="number"
+                      type="text"
                       inputMode="decimal"
                       value={item.requested_quantity || ''}
-                      onChange={(e) => updateItem(idx, 'requested_quantity', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        updateItem(idx, 'requested_quantity', val === '' ? 0 : parseFloat(val) || 0);
+                      }}
                       className="w-full px-3 py-2 bg-input border-2 border-border rounded-lg text-foreground font-bold text-center touch-target mt-1"
                     />
                   </div>
@@ -457,8 +460,11 @@ export default function TransferCDtoPCP() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setLocation('/operator')} className="p-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors touch-target">
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <div className="flex-1">
             <h1 className="text-2xl font-black text-foreground">🔄 Transferências</h1>
             <p className="text-muted-foreground text-sm">{user.fullName} • CD → PCP</p>
           </div>

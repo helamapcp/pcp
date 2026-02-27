@@ -15,6 +15,7 @@ import TransferPMPtoFactory from "./pages/TransferPMPtoFactory";
 import InventoryCountPage from "./pages/InventoryCountPage";
 import ManagerDashboardV2 from "./pages/ManagerDashboardV2";
 import AdminPanel from "./pages/AdminPanel";
+import AdminStockAdjustment from "./pages/AdminStockAdjustment";
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType; allowedRoles: string[] }) {
@@ -61,6 +62,7 @@ function Router() {
       
       {/* Admin routes */}
       <Route path="/admin" component={() => <ProtectedRoute component={AdminPanel} allowedRoles={['admin']} />} />
+      <Route path="/admin/stock-adjustment" component={() => <ProtectedRoute component={AdminStockAdjustment} allowedRoles={['admin']} />} />
       
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
