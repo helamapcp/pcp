@@ -364,6 +364,7 @@ export type Database = {
           difference_kg: number
           id: string
           ideal_quantity_kg: number
+          justification: string | null
           package_type: string
           package_weight: number
           product_id: string
@@ -375,6 +376,7 @@ export type Database = {
           difference_kg?: number
           id?: string
           ideal_quantity_kg?: number
+          justification?: string | null
           package_type?: string
           package_weight?: number
           product_id: string
@@ -386,6 +388,7 @@ export type Database = {
           difference_kg?: number
           id?: string
           ideal_quantity_kg?: number
+          justification?: string | null
           package_type?: string
           package_weight?: number
           product_id?: string
