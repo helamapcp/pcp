@@ -110,87 +110,22 @@ export function useInventoryCounts() {
       system_quantity: number;
       system_total_kg: number;
     }>,
-    locationCode: string,
+    _locationCode: string,
     userId: string,
     userName: string
   ) => {
-    // Update each item
-    for (const item of items) {
-      await supabase
-        .from('inventory_count_items')
-        .update({
-          counted_quantity: item.counted_quantity,
-          counted_total_kg: item.counted_total_kg,
-          difference_kg: item.difference_kg,
-          justification: item.justification,
-        })
-        .eq('id', item.id);
+    // Atomic confirmation via RPC — all steps in a single transaction
+    const { data, error } = await supabase.rpc('confirm_inventory_count', {
+      p_count_id: countId,
+      p_user_id: userId,
+      p_user_name: userName,
+      p_items: JSON.stringify(items),
+    });
 
-      // If difference, adjust stock and log
-      if (Math.abs(item.difference_kg) > 0.001) {
-        // Adjust stock
-        await supabase
-          .from('stock')
-          .upsert({
-            product_id: item.product_id,
-            location_code: locationCode,
-            quantity: item.counted_quantity,
-            total_kg: item.counted_total_kg,
-            unit: 'kg',
-            updated_at: new Date().toISOString(),
-            updated_by: userId,
-          }, { onConflict: 'product_id,location_code' });
-
-        // Log adjustment
-        await supabase
-          .from('stock_adjustments')
-          .insert({
-            product_id: item.product_id,
-            location_code: locationCode,
-            old_quantity: item.system_quantity,
-            old_total_kg: item.system_total_kg,
-            new_quantity: item.counted_quantity,
-            new_total_kg: item.counted_total_kg,
-            difference_kg: item.difference_kg,
-            reason: item.justification,
-            reference_type: 'inventory_count',
-            reference_id: countId,
-            user_id: userId,
-            user_name: userName,
-          });
-
-        // Record stock movement
-        await supabase
-          .from('stock_movements')
-          .insert({
-            product_id: item.product_id,
-            location_code: locationCode,
-            movement_type: 'adjustment',
-            quantity: Math.abs(item.difference_kg),
-            unit: 'kg',
-            total_kg: Math.abs(item.difference_kg),
-            reference_type: 'inventory_count',
-            reference_id: countId,
-            notes: `Ajuste inventário: ${item.difference_kg > 0 ? '+' : ''}${item.difference_kg.toFixed(2)}kg | ${item.justification || 'Sem justificativa'}`,
-            user_id: userId,
-            user_name: userName,
-          });
-      }
-    }
-
-    // Update count status
-    await supabase
-      .from('inventory_counts')
-      .update({
-        status: 'confirmed',
-        confirmed_by: userId,
-        confirmed_by_name: userName,
-        confirmed_at: new Date().toISOString(),
-      })
-      .eq('id', countId);
+    if (error) return { error };
 
     await fetchCounts();
-    return { error: null };
+    return { data, error: null };
   }, [fetchCounts]);
 
   return { counts, loading, createCount, confirmCount, refetch: fetchCounts };

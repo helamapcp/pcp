@@ -948,9 +948,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      inventory_adjustment_summary: {
+        Row: {
+          avg_difference_kg: number | null
+          location_code: string | null
+          product_id: string | null
+          total_adjustments: number | null
+          total_difference_kg: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_adjustments_location_code_fkey"
+            columns: ["location_code"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "stock_adjustments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      confirm_inventory_count: {
+        Args: {
+          p_count_id: string
+          p_items?: Json
+          p_user_id: string
+          p_user_name: string
+        }
+        Returns: Json
+      }
       confirm_production: {
         Args: {
           p_batches: number

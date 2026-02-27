@@ -81,7 +81,7 @@ export default function InventoryCountPage() {
         category: product?.category || '',
         system_quantity: Number(ci.system_quantity),
         system_total_kg: Number(ci.system_total_kg),
-        counted_total_kg: '',
+        counted_total_kg: Number(ci.system_total_kg).toString(),
         difference_kg: 0,
         justification: '',
       };
