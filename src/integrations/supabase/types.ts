@@ -234,6 +234,113 @@ export type Database = {
           },
         ]
       }
+      production_order_items: {
+        Row: {
+          adjusted_quantity_kg: number
+          created_at: string | null
+          difference_kg: number
+          id: string
+          ideal_quantity_kg: number
+          package_type: string
+          package_weight: number
+          product_id: string
+          production_order_id: string
+        }
+        Insert: {
+          adjusted_quantity_kg?: number
+          created_at?: string | null
+          difference_kg?: number
+          id?: string
+          ideal_quantity_kg?: number
+          package_type?: string
+          package_weight?: number
+          product_id: string
+          production_order_id: string
+        }
+        Update: {
+          adjusted_quantity_kg?: number
+          created_at?: string | null
+          difference_kg?: number
+          id?: string
+          ideal_quantity_kg?: number
+          package_type?: string
+          package_weight?: number
+          product_id?: string
+          production_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_items_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_orders: {
+        Row: {
+          batches: number
+          confirmed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          final_product: string
+          formulation_id: string
+          id: string
+          machine: string
+          notes: string | null
+          status: string
+          total_compound_kg: number
+          weight_per_batch: number
+        }
+        Insert: {
+          batches?: number
+          confirmed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          final_product: string
+          formulation_id: string
+          id?: string
+          machine: string
+          notes?: string | null
+          status?: string
+          total_compound_kg?: number
+          weight_per_batch?: number
+        }
+        Update: {
+          batches?: number
+          confirmed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          final_product?: string
+          formulation_id?: string
+          id?: string
+          machine?: string
+          notes?: string | null
+          status?: string
+          total_compound_kg?: number
+          weight_per_batch?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_orders_formulation_id_fkey"
+            columns: ["formulation_id"]
+            isOneToOne: false
+            referencedRelation: "formulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           base_unit: string

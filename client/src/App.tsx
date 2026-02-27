@@ -10,6 +10,7 @@ import EstoqueLogin from "./pages/EstoqueLogin";
 import OperatorDashboardV2 from "./pages/OperatorDashboardV2";
 import CDStockEntry from "./pages/CDStockEntry";
 import TransferCDtoPCP from "./pages/TransferCDtoPCP";
+import ProductionOrderPage from "./pages/ProductionOrderPage";
 import ManagerDashboardV2 from "./pages/ManagerDashboardV2";
 import AdminPanel from "./pages/AdminPanel";
 import { Loader2 } from 'lucide-react';
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/operator" component={() => <ProtectedRoute component={OperatorDashboardV2} allowedRoles={['operador']} />} />
       <Route path="/operator/cd-entry" component={() => <ProtectedRoute component={CDStockEntry} allowedRoles={['operador']} />} />
       <Route path="/operator/transfer-cd-pcp" component={() => <ProtectedRoute component={TransferCDtoPCP} allowedRoles={['operador']} />} />
+      <Route path="/operator/production" component={() => <ProtectedRoute component={ProductionOrderPage} allowedRoles={['operador']} />} />
       
       {/* Manager routes */}
       <Route path="/manager" component={() => <ProtectedRoute component={ManagerDashboardV2} allowedRoles={['gerente']} />} />

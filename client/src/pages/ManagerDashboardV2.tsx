@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIndustrialProducts, useStock, useStockMovements, useTransfers } from '@/hooks/useIndustrialData';
-import { LogOut, BarChart3, ArrowLeftRight, ScrollText, Package } from 'lucide-react';
+import { useProductionOrders } from '@/hooks/useProductionData';
+import { LogOut, BarChart3, ArrowLeftRight, ScrollText, Package, Factory } from 'lucide-react';
 
 const LOCATIONS = ['CD', 'PCP', 'PMP', 'FABRICA'] as const;
 
@@ -13,8 +14,9 @@ export default function ManagerDashboardV2() {
   const { stock, getStock, getLocationTotalKg } = useStock();
   const { movements } = useStockMovements();
   const { transfers } = useTransfers();
+  const { orders: productionOrders } = useProductionOrders();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'movements' | 'transfers' | 'audit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'movements' | 'transfers' | 'production' | 'audit'>('dashboard');
 
   const handleLogout = async () => {
     await signOut();
@@ -33,6 +35,7 @@ export default function ManagerDashboardV2() {
     { id: 'dashboard' as const, label: 'Dashboard', icon: BarChart3 },
     { id: 'movements' as const, label: 'Movimentações', icon: Package },
     { id: 'transfers' as const, label: 'Transferências', icon: ArrowLeftRight },
+    { id: 'production' as const, label: 'Produção', icon: Factory },
     { id: 'audit' as const, label: 'Auditoria', icon: ScrollText },
   ];
 
@@ -215,6 +218,39 @@ export default function ManagerDashboardV2() {
                       'bg-secondary text-secondary-foreground'
                     }`}>
                       {t.status === 'pending' ? 'Pendente' : t.status === 'completed' ? 'Concluída' : t.status}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {activeTab === 'production' && (
+          <div className="space-y-4">
+            {productionOrders.length === 0 ? (
+              <div className="bg-card border-2 border-border rounded-lg px-6 py-12 text-center text-muted-foreground">
+                <p>Nenhuma ordem de produção registrada.</p>
+              </div>
+            ) : (
+              productionOrders.map(po => (
+                <div key={po.id} className={`bg-card border-2 ${po.status === 'confirmed' ? 'border-industrial-success' : 'border-border'} rounded-lg p-4`}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-foreground font-bold">{po.final_product} • {po.machine}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {po.batches} batidas × {po.weight_per_batch}kg = {Number(po.total_compound_kg).toFixed(1)}kg composto
+                      </p>
+                      <p className="text-muted-foreground text-xs mt-1">
+                        {po.created_by_name} • {new Date(po.created_at).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      po.status === 'confirmed' ? 'bg-industrial-success/20 text-industrial-success' :
+                      po.status === 'draft' ? 'bg-industrial-warning/20 text-industrial-warning' :
+                      'bg-secondary text-secondary-foreground'
+                    }`}>
+                      {po.status === 'confirmed' ? 'Confirmada' : po.status === 'draft' ? 'Rascunho' : po.status}
                     </span>
                   </div>
                 </div>
