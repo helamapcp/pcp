@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Package, ArrowRightLeft, Factory, Truck } from 'lucide-react';
+import { LogOut, Package, ArrowRightLeft, Factory, Truck, ClipboardList } from 'lucide-react';
 
 export default function OperatorDashboardV2() {
   const [, setLocation] = useLocation();
@@ -49,6 +49,14 @@ export default function OperatorDashboardV2() {
       path: '/operator/transfer-pmp-factory',
       color: 'border-destructive hover:bg-destructive/10',
       iconColor: 'text-destructive',
+    },
+    {
+      label: 'Contagem de Inventário',
+      description: 'Snapshot físico com ajuste automático',
+      icon: ClipboardList,
+      path: '/operator/inventory-count',
+      color: 'border-accent hover:bg-accent/10',
+      iconColor: 'text-muted-foreground',
     },
   ];
 

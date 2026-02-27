@@ -3,7 +3,8 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIndustrialProducts, useStock, useStockMovements, useTransfers } from '@/hooks/useIndustrialData';
 import { useProductionOrders, useProductionBatches } from '@/hooks/useProductionData';
-import { LogOut, BarChart3, ArrowLeftRight, ScrollText, Package, Factory, Layers } from 'lucide-react';
+import { useStockAdjustments } from '@/hooks/useInventoryCounting';
+import { LogOut, BarChart3, ArrowLeftRight, ScrollText, Package, Factory, Layers, Scale } from 'lucide-react';
 
 const LOCATIONS = ['CD', 'PCP', 'PMP', 'FABRICA'] as const;
 
@@ -16,8 +17,9 @@ export default function ManagerDashboardV2() {
   const { transfers } = useTransfers();
   const { orders: productionOrders } = useProductionOrders();
   const { batches } = useProductionBatches();
+  const { adjustments } = useStockAdjustments();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'movements' | 'transfers' | 'production' | 'batches' | 'audit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'movements' | 'transfers' | 'production' | 'batches' | 'adjustments' | 'audit'>('dashboard');
 
   const handleLogout = async () => {
     await signOut();
@@ -38,6 +40,7 @@ export default function ManagerDashboardV2() {
     { id: 'transfers' as const, label: 'Transferências', icon: ArrowLeftRight },
     { id: 'production' as const, label: 'Produção', icon: Factory },
     { id: 'batches' as const, label: 'Lotes', icon: Layers },
+    { id: 'adjustments' as const, label: 'Ajustes', icon: Scale },
     { id: 'audit' as const, label: 'Auditoria', icon: ScrollText },
   ];
 
@@ -297,6 +300,54 @@ export default function ManagerDashboardV2() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'adjustments' && (
+          <div className="bg-card border-2 border-border rounded-lg overflow-hidden">
+            <div className="px-4 py-3 bg-secondary border-b-2 border-border">
+              <h3 className="text-foreground font-bold text-lg">⚖️ Ajustes de Estoque</h3>
+              <p className="text-muted-foreground text-xs">Contagens de inventário e ajustes manuais</p>
+            </div>
+            {adjustments.length === 0 ? (
+              <div className="px-6 py-12 text-center text-muted-foreground"><p>Nenhum ajuste registrado.</p></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-secondary border-b-2 border-border">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-foreground font-bold">Data</th>
+                      <th className="px-4 py-3 text-left text-foreground font-bold">Local</th>
+                      <th className="px-4 py-3 text-right text-foreground font-bold">Anterior (kg)</th>
+                      <th className="px-4 py-3 text-right text-foreground font-bold">Novo (kg)</th>
+                      <th className="px-4 py-3 text-right text-foreground font-bold">Diferença</th>
+                      <th className="px-4 py-3 text-left text-foreground font-bold">Motivo</th>
+                      <th className="px-4 py-3 text-left text-foreground font-bold">Responsável</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {adjustments.slice(0, 100).map(a => {
+                      const product = products.find(p => p.id === a.product_id);
+                      return (
+                        <tr key={a.id} className="hover:bg-secondary/50 transition-colors">
+                          <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(a.created_at).toLocaleString('pt-BR')}</td>
+                          <td className="px-4 py-3 text-foreground font-bold text-sm">
+                            {product?.name || '—'} <span className="text-muted-foreground font-normal">({a.location_code})</span>
+                          </td>
+                          <td className="px-4 py-3 text-right text-foreground">{Number(a.old_total_kg).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right text-foreground font-bold">{Number(a.new_total_kg).toFixed(2)}</td>
+                          <td className={`px-4 py-3 text-right font-bold ${Number(a.difference_kg) > 0 ? 'text-industrial-success' : 'text-destructive'}`}>
+                            {Number(a.difference_kg) > 0 ? '+' : ''}{Number(a.difference_kg).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground text-xs truncate max-w-[200px]">{a.reason || '—'}</td>
+                          <td className="px-4 py-3 text-foreground text-sm">{a.user_name}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
