@@ -7,8 +7,10 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import EstoqueLogin from "./pages/EstoqueLogin";
-import EstoqueOperatorPage from "./pages/EstoqueOperatorPage";
-import EstoqueManagerPage from "./pages/EstoqueManagerPage";
+import OperatorDashboardV2 from "./pages/OperatorDashboardV2";
+import CDStockEntry from "./pages/CDStockEntry";
+import TransferCDtoPCP from "./pages/TransferCDtoPCP";
+import ManagerDashboardV2 from "./pages/ManagerDashboardV2";
 import AdminPanel from "./pages/AdminPanel";
 import { Loader2 } from 'lucide-react';
 
@@ -42,9 +44,18 @@ function Router() {
     <Switch>
       <Route path="/" component={EstoqueLogin} />
       <Route path="/login" component={EstoqueLogin} />
-      <Route path="/operator" component={() => <ProtectedRoute component={EstoqueOperatorPage} allowedRoles={['operador']} />} />
-      <Route path="/manager" component={() => <ProtectedRoute component={EstoqueManagerPage} allowedRoles={['gerente']} />} />
+      
+      {/* Operator routes */}
+      <Route path="/operator" component={() => <ProtectedRoute component={OperatorDashboardV2} allowedRoles={['operador']} />} />
+      <Route path="/operator/cd-entry" component={() => <ProtectedRoute component={CDStockEntry} allowedRoles={['operador']} />} />
+      <Route path="/operator/transfer-cd-pcp" component={() => <ProtectedRoute component={TransferCDtoPCP} allowedRoles={['operador']} />} />
+      
+      {/* Manager routes */}
+      <Route path="/manager" component={() => <ProtectedRoute component={ManagerDashboardV2} allowedRoles={['gerente']} />} />
+      
+      {/* Admin routes */}
       <Route path="/admin" component={() => <ProtectedRoute component={AdminPanel} allowedRoles={['admin']} />} />
+      
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
