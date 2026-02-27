@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIndustrialProducts, useStock, useStockMovements, useTransfers } from '@/hooks/useIndustrialData';
-import { useProductionOrders } from '@/hooks/useProductionData';
-import { LogOut, BarChart3, ArrowLeftRight, ScrollText, Package, Factory } from 'lucide-react';
+import { useProductionOrders, useProductionBatches } from '@/hooks/useProductionData';
+import { LogOut, BarChart3, ArrowLeftRight, ScrollText, Package, Factory, Layers } from 'lucide-react';
 
 const LOCATIONS = ['CD', 'PCP', 'PMP', 'FABRICA'] as const;
 
@@ -15,8 +15,9 @@ export default function ManagerDashboardV2() {
   const { movements } = useStockMovements();
   const { transfers } = useTransfers();
   const { orders: productionOrders } = useProductionOrders();
+  const { batches } = useProductionBatches();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'movements' | 'transfers' | 'production' | 'audit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'movements' | 'transfers' | 'production' | 'batches' | 'audit'>('dashboard');
 
   const handleLogout = async () => {
     await signOut();
@@ -36,8 +37,26 @@ export default function ManagerDashboardV2() {
     { id: 'movements' as const, label: 'Movimentações', icon: Package },
     { id: 'transfers' as const, label: 'Transferências', icon: ArrowLeftRight },
     { id: 'production' as const, label: 'Produção', icon: Factory },
+    { id: 'batches' as const, label: 'Lotes', icon: Layers },
     { id: 'audit' as const, label: 'Auditoria', icon: ScrollText },
   ];
+
+  const movementTypeLabel = (t: string) => {
+    const map: Record<string, string> = {
+      entry: 'Entrada', transfer_out: 'Saída', transfer_in: 'Recebimento',
+      production_out: 'Prod. Saída', production_in: 'Prod. Entrada',
+      factory_out: 'Envio Fábrica', factory_in: 'Receb. Fábrica',
+    };
+    return map[t] || t;
+  };
+
+  const movementTypeColor = (t: string) => {
+    if (t === 'entry' || t === 'transfer_in' || t === 'production_in' || t === 'factory_in')
+      return 'bg-industrial-success/20 text-industrial-success';
+    if (t === 'transfer_out' || t === 'production_out' || t === 'factory_out')
+      return 'bg-destructive/20 text-destructive';
+    return 'bg-secondary text-secondary-foreground';
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -71,7 +90,6 @@ export default function ManagerDashboardV2() {
       <div className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            {/* Location totals */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {LOCATIONS.map(loc => {
                 const totalKg = getLocationTotalKg(loc);
@@ -85,12 +103,11 @@ export default function ManagerDashboardV2() {
               })}
             </div>
 
-            {/* Summary stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
                 { label: 'PRODUTOS', value: products.length },
                 { label: 'MOVIMENTAÇÕES HOJE', value: todayMovements.length },
-                { label: 'TRANSFERÊNCIAS PENDENTES', value: transfers.filter(t => t.status === 'pending').length },
+                { label: 'LOTES PRODUZIDOS', value: batches.filter(b => b.status === 'completed').length },
                 { label: 'TRANSFERÊNCIAS CONCLUÍDAS', value: transfers.filter(t => t.status === 'completed').length },
               ].map(stat => (
                 <div key={stat.label} className="bg-card border-2 border-border rounded-lg p-4 md:p-6">
@@ -100,7 +117,6 @@ export default function ManagerDashboardV2() {
               ))}
             </div>
 
-            {/* Stock table */}
             <div className="bg-card border-2 border-border rounded-lg overflow-hidden">
               <div className="px-4 py-3 bg-secondary border-b-2 border-border">
                 <h3 className="text-foreground font-bold text-lg">Estoque por Local</h3>
@@ -122,6 +138,7 @@ export default function ManagerDashboardV2() {
                         const s = getStock(product.id, loc);
                         return sum + Number(s?.total_kg || 0);
                       }, 0);
+                      if (total === 0) return null;
                       return (
                         <tr key={product.id} className="hover:bg-secondary/50 transition-colors">
                           <td className="px-4 py-3 text-foreground font-semibold text-sm">{product.name}</td>
@@ -156,7 +173,7 @@ export default function ManagerDashboardV2() {
                       <th className="px-4 py-3 text-left text-foreground font-bold">Data/Hora</th>
                       <th className="px-4 py-3 text-left text-foreground font-bold">Tipo</th>
                       <th className="px-4 py-3 text-left text-foreground font-bold">Local</th>
-                      <th className="px-4 py-3 text-right text-foreground font-bold">Qtd</th>
+                      <th className="px-4 py-3 text-right text-foreground font-bold">Qtd (kg)</th>
                       <th className="px-4 py-3 text-left text-foreground font-bold">Notas</th>
                       <th className="px-4 py-3 text-left text-foreground font-bold">Responsável</th>
                     </tr>
@@ -166,20 +183,12 @@ export default function ManagerDashboardV2() {
                       <tr key={m.id} className="hover:bg-secondary/50 transition-colors">
                         <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(m.created_at).toLocaleString('pt-BR')}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${
-                            m.movement_type === 'entry' ? 'bg-industrial-success/20 text-industrial-success' :
-                            m.movement_type === 'transfer_out' ? 'bg-destructive/20 text-destructive' :
-                            m.movement_type === 'transfer_in' ? 'bg-primary/20 text-primary' :
-                            'bg-secondary text-secondary-foreground'
-                          }`}>
-                            {m.movement_type === 'entry' ? 'Entrada' :
-                             m.movement_type === 'transfer_out' ? 'Saída' :
-                             m.movement_type === 'transfer_in' ? 'Recebimento' :
-                             m.movement_type}
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${movementTypeColor(m.movement_type)}`}>
+                            {movementTypeLabel(m.movement_type)}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-foreground font-bold text-sm">{m.location_code}</td>
-                        <td className="px-4 py-3 text-right text-foreground font-bold">{m.quantity} {m.unit}</td>
+                        <td className="px-4 py-3 text-right text-foreground font-bold">{Number(m.total_kg).toFixed(1)}</td>
                         <td className="px-4 py-3 text-muted-foreground text-xs truncate max-w-[200px]">{m.notes}</td>
                         <td className="px-4 py-3 text-foreground text-sm">{m.user_name}</td>
                       </tr>
@@ -203,14 +212,8 @@ export default function ManagerDashboardV2() {
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="text-foreground font-bold">{t.from_location} → {t.to_location}</p>
-                      <p className="text-muted-foreground text-xs">
-                        {t.requested_by_name} • {new Date(t.created_at).toLocaleString('pt-BR')}
-                      </p>
-                      {t.confirmed_by_name && (
-                        <p className="text-muted-foreground text-xs mt-1">
-                          Confirmado por {t.confirmed_by_name}
-                        </p>
-                      )}
+                      <p className="text-muted-foreground text-xs">{t.requested_by_name} • {new Date(t.created_at).toLocaleString('pt-BR')}</p>
+                      {t.notes && <p className="text-muted-foreground text-xs mt-1 truncate max-w-[400px]">{t.notes}</p>}
                     </div>
                     <span className={`px-2 py-1 rounded text-xs font-bold ${
                       t.status === 'pending' ? 'bg-industrial-warning/20 text-industrial-warning' :
@@ -239,23 +242,61 @@ export default function ManagerDashboardV2() {
                     <div>
                       <p className="text-foreground font-bold">{po.final_product} • {po.machine}</p>
                       <p className="text-muted-foreground text-xs">
-                        {po.batches} batidas × {po.weight_per_batch}kg = {Number(po.total_compound_kg).toFixed(1)}kg composto
+                        {po.batches} batidas × {po.weight_per_batch}kg = {Number(po.total_compound_kg).toFixed(1)}kg
                       </p>
                       <p className="text-muted-foreground text-xs mt-1">
                         {po.created_by_name} • {new Date(po.created_at).toLocaleString('pt-BR')}
                       </p>
                     </div>
                     <span className={`px-2 py-1 rounded text-xs font-bold ${
-                      po.status === 'confirmed' ? 'bg-industrial-success/20 text-industrial-success' :
-                      po.status === 'draft' ? 'bg-industrial-warning/20 text-industrial-warning' :
-                      'bg-secondary text-secondary-foreground'
+                      po.status === 'confirmed' ? 'bg-industrial-success/20 text-industrial-success' : 'bg-industrial-warning/20 text-industrial-warning'
                     }`}>
-                      {po.status === 'confirmed' ? 'Confirmada' : po.status === 'draft' ? 'Rascunho' : po.status}
+                      {po.status === 'confirmed' ? 'Confirmada' : po.status}
                     </span>
                   </div>
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {activeTab === 'batches' && (
+          <div className="space-y-4">
+            <div className="bg-card border-2 border-border rounded-lg overflow-hidden">
+              <div className="px-4 py-3 bg-secondary border-b-2 border-border">
+                <h3 className="text-foreground font-bold text-lg">🏭 Lotes de Produção</h3>
+                <p className="text-muted-foreground text-xs">Rastreabilidade completa de cada lote</p>
+              </div>
+              {batches.length === 0 ? (
+                <div className="px-6 py-12 text-center text-muted-foreground"><p>Nenhum lote registrado.</p></div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {batches.map(b => (
+                    <div key={b.id} className="p-4 hover:bg-secondary/50 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-primary font-black text-sm">{b.batch_code || b.id.slice(0, 8)}</p>
+                          <p className="text-foreground font-bold text-sm mt-1">
+                            {b.final_product} • {b.machine}
+                          </p>
+                          <p className="text-muted-foreground text-xs mt-1">
+                            {b.batches} batidas • {Number(b.total_compound_kg).toFixed(1)}kg composto
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            {b.produced_by_name} • {b.completed_at ? new Date(b.completed_at).toLocaleString('pt-BR') : ''}
+                          </p>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                          b.status === 'completed' ? 'bg-industrial-success/20 text-industrial-success' : 'bg-industrial-warning/20 text-industrial-warning'
+                        }`}>
+                          {b.status === 'completed' ? 'Concluído' : b.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -276,12 +317,8 @@ export default function ManagerDashboardV2() {
                         <span className="text-muted-foreground text-xs">{new Date(m.created_at).toLocaleString('pt-BR')}</span>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs font-bold whitespace-nowrap ${
-                      m.movement_type === 'entry' ? 'bg-industrial-success/20 text-industrial-success' :
-                      m.movement_type.includes('transfer') ? 'bg-primary/20 text-primary' :
-                      'bg-secondary text-secondary-foreground'
-                    }`}>
-                      {m.location_code} • {m.quantity} {m.unit}
+                    <span className={`px-2 py-1 rounded text-xs font-bold whitespace-nowrap ${movementTypeColor(m.movement_type)}`}>
+                      {m.location_code} • {Number(m.total_kg).toFixed(1)}kg
                     </span>
                   </div>
                 </div>

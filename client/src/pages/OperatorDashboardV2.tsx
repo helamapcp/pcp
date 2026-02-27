@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Package, ArrowRightLeft, Factory } from 'lucide-react';
+import { LogOut, Package, ArrowRightLeft, Factory, Truck } from 'lucide-react';
 
 export default function OperatorDashboardV2() {
   const [, setLocation] = useLocation();
@@ -42,6 +42,14 @@ export default function OperatorDashboardV2() {
       color: 'border-industrial-warning hover:bg-industrial-warning/10',
       iconColor: 'text-industrial-warning',
     },
+    {
+      label: 'Envio PMP → Fábrica',
+      description: 'Transferir composto para a fábrica',
+      icon: Truck,
+      path: '/operator/transfer-pmp-factory',
+      color: 'border-destructive hover:bg-destructive/10',
+      iconColor: 'text-destructive',
+    },
   ];
 
   return (
@@ -69,12 +77,9 @@ export default function OperatorDashboardV2() {
           {menuItems.map(item => {
             const Icon = item.icon;
             return (
-              <button
-                key={item.path}
-                onClick={() => setLocation(item.path)}
-                className={`w-full bg-card border-2 ${item.color} rounded-xl p-5 flex items-center gap-4 transition-colors touch-target text-left`}
-              >
-                <div className={`p-3 rounded-lg bg-secondary`}>
+              <button key={item.path} onClick={() => setLocation(item.path)}
+                className={`w-full bg-card border-2 ${item.color} rounded-xl p-5 flex items-center gap-4 transition-colors touch-target text-left`}>
+                <div className="p-3 rounded-lg bg-secondary">
                   <Icon className={`w-7 h-7 ${item.iconColor}`} />
                 </div>
                 <div>

@@ -3,242 +3,273 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { IndustrialButton } from '@/components/IndustrialButton';
-import { X, Plus, Trash2, Edit2, LogOut, Loader2 } from 'lucide-react';
+import { X, Plus, Trash2, Edit2, LogOut, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 type AppRole = 'admin' | 'gerente' | 'operador';
 
-interface UserItem {
-  id: string;
-  username: string;
-  full_name: string;
-  role: AppRole;
-  created_at: string;
-}
-
-interface CategoryItem {
-  id: string;
-  name: string;
-}
-
+interface UserItem { id: string; username: string; full_name: string; role: AppRole; created_at: string; }
+interface CategoryItem { id: string; name: string; }
 interface ProductItem {
-  id: string;
-  name: string;
-  category_id: string | null;
-  unit_weight_kg: number;
+  id: string; name: string; category_id: string | null; unit_weight_kg: number;
+  base_unit: string; conversion_factor: number; package_type: string; package_weight: number;
 }
+interface FormulationItem { id: string; name: string; final_product: string; machine: string; weight_per_batch: number; active: boolean; }
+interface FormulationDetail { id: string; formulation_id: string; product_id: string; quantity_per_batch: number; unit: string; }
+interface LocationItem { id: string; code: string; name: string; description: string | null; sort_order: number; active: boolean; }
 
 export default function AdminPanel() {
   const [, setLocation] = useLocation();
   const { user, signOut } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'users' | 'products' | 'weights'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'products' | 'formulations' | 'locations'>('users');
 
-  // Users state
+  // Users
   const [users, setUsers] = useState<UserItem[]>([]);
   const [showUserForm, setShowUserForm] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [userFormData, setUserFormData] = useState({ name: '', username: '', email: '', password: '', role: 'operador' as AppRole });
   const [userLoading, setUserLoading] = useState(false);
 
-  // Categories state
+  // Categories
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [categoryFormData, setCategoryFormData] = useState('');
 
-  // Products state
+  // Products
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [showProductForm, setShowProductForm] = useState(false);
-  const [productFormData, setProductFormData] = useState({ name: '', category_id: '', weight: '' });
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [productFormData, setProductFormData] = useState({
+    name: '', category_id: '', unit_weight_kg: '', base_unit: 'kg',
+    conversion_factor: '1', package_type: 'bulk', package_weight: '0',
+  });
 
-  // Weights editing
-  const [editingWeights, setEditingWeights] = useState<Record<string, number>>({});
+  // Formulations
+  const [formulations, setFormulations] = useState<FormulationItem[]>([]);
+  const [showFormulationForm, setShowFormulationForm] = useState(false);
+  const [editingFormulationId, setEditingFormulationId] = useState<string | null>(null);
+  const [formulationFormData, setFormulationFormData] = useState({
+    name: '', final_product: '', machine: '', weight_per_batch: '',
+  });
+  const [formulationDetails, setFormulationDetails] = useState<FormulationDetail[]>([]);
+  const [showDetailForm, setShowDetailForm] = useState<string | null>(null); // formulation id
+  const [detailFormData, setDetailFormData] = useState({ product_id: '', quantity_per_batch: '' });
 
-  const handleLogout = async () => {
-    await signOut();
-    setLocation('/login');
-  };
+  // Locations
+  const [locations, setLocations] = useState<LocationItem[]>([]);
 
-  // Fetch users via edge function
+  const handleLogout = async () => { await signOut(); setLocation('/login'); };
+
   const fetchUsers = useCallback(async () => {
-    const { data, error } = await supabase.functions.invoke('manage-users', {
-      body: { action: 'list' },
-    });
+    const { data, error } = await supabase.functions.invoke('manage-users', { body: { action: 'list' } });
     if (!error && data?.users) setUsers(data.users);
   }, []);
-
-  // Fetch categories
   const fetchCategories = useCallback(async () => {
     const { data } = await supabase.from('categories').select('*').order('name');
     if (data) setCategories(data);
   }, []);
-
-  // Fetch products
   const fetchProducts = useCallback(async () => {
     const { data } = await supabase.from('products').select('*').order('name');
-    if (data) setProducts(data);
+    if (data) setProducts(data as unknown as ProductItem[]);
+  }, []);
+  const fetchFormulations = useCallback(async () => {
+    const { data } = await supabase.from('formulations').select('*').order('name');
+    if (data) setFormulations(data as unknown as FormulationItem[]);
+  }, []);
+  const fetchFormulationDetails = useCallback(async (formulationId: string) => {
+    const { data } = await supabase.from('formulation_items').select('*').eq('formulation_id', formulationId);
+    if (data) setFormulationDetails(data as unknown as FormulationDetail[]);
+  }, []);
+  const fetchLocations = useCallback(async () => {
+    const { data } = await supabase.from('locations').select('*').order('sort_order');
+    if (data) setLocations(data as unknown as LocationItem[]);
   }, []);
 
   useEffect(() => {
-    fetchUsers();
-    fetchCategories();
-    fetchProducts();
-  }, [fetchUsers, fetchCategories, fetchProducts]);
+    fetchUsers(); fetchCategories(); fetchProducts(); fetchFormulations(); fetchLocations();
+  }, [fetchUsers, fetchCategories, fetchProducts, fetchFormulations, fetchLocations]);
 
-  if (!user || user.role !== 'admin') {
-    setLocation('/login');
-    return null;
-  }
+  if (!user || user.role !== 'admin') { setLocation('/login'); return null; }
 
-  // USER MANAGEMENT
+  // ── USER HANDLERS ──
   const handleAddUser = async () => {
     if (!userFormData.name || !userFormData.email || !userFormData.password) {
-      toast.error('Preencha todos os campos: Nome, E-mail e Senha');
-      return;
+      toast.error('Preencha Nome, E-mail e Senha'); return;
     }
-    if (userFormData.password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
-      return;
-    }
+    if (userFormData.password.length < 6) { toast.error('Senha mínima: 6 caracteres'); return; }
     setUserLoading(true);
-
     try {
-      const action = editingUserId ? 'update' : 'create';
       const body: any = {
-        action,
+        action: editingUserId ? 'update' : 'create',
         username: userFormData.username || userFormData.email.split('@')[0],
-        full_name: userFormData.name,
-        email: userFormData.email,
-        password: userFormData.password,
-        role: userFormData.role,
+        full_name: userFormData.name, email: userFormData.email,
+        password: userFormData.password, role: userFormData.role,
       };
       if (editingUserId) body.userId = editingUserId;
-
       const { data, error } = await supabase.functions.invoke('manage-users', { body });
-
-      if (error) {
-        const msg = error.message || 'Erro de conexão com o servidor';
-        if (msg.includes('already registered') || msg.includes('already exists')) {
-          toast.error('Este e-mail já está cadastrado no sistema');
-        } else if (msg.includes('weak_password') || msg.includes('password')) {
-          toast.error('Senha muito fraca. Use pelo menos 6 caracteres');
-        } else {
-          toast.error(`Erro no servidor: ${msg}`);
-        }
-      } else if (data?.error) {
-        const errMsg = data.error;
-        if (errMsg.includes('already registered') || errMsg.includes('already exists')) {
-          toast.error('Este e-mail já está cadastrado no sistema');
-        } else if (errMsg.includes('Admin access required')) {
-          toast.error('Acesso negado: apenas administradores podem gerenciar usuários');
-        } else {
-          toast.error(`Falha: ${errMsg}`);
-        }
-      } else {
-        toast.success(editingUserId ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!');
-        setShowUserForm(false);
-        setEditingUserId(null);
+      if (error) { toast.error(error.message); }
+      else if (data?.error) { toast.error(data.error); }
+      else {
+        toast.success(editingUserId ? 'Usuário atualizado!' : 'Usuário criado!');
+        setShowUserForm(false); setEditingUserId(null);
         setUserFormData({ name: '', username: '', email: '', password: '', role: 'operador' });
         fetchUsers();
       }
-    } catch (e: any) {
-      toast.error('Erro inesperado. Verifique sua conexão e tente novamente.');
-    }
+    } catch { toast.error('Erro inesperado'); }
     setUserLoading(false);
   };
-
-  const handleEditUser = (u: UserItem) => {
-    setUserFormData({ name: u.full_name, username: u.username, email: '', password: '', role: u.role });
-    setEditingUserId(u.id);
-    setShowUserForm(true);
-  };
-
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Tem certeza que deseja remover este usuário?')) return;
-    const { data, error } = await supabase.functions.invoke('manage-users', {
-      body: { action: 'delete', userId },
-    });
-    if (error || data?.error) {
-      toast.error(data?.error || 'Erro ao remover');
-    } else {
-      toast.success('Usuário removido');
-      fetchUsers();
-    }
+    if (!confirm('Remover usuário?')) return;
+    const { data, error } = await supabase.functions.invoke('manage-users', { body: { action: 'delete', userId } });
+    if (error || data?.error) toast.error(data?.error || 'Erro');
+    else { toast.success('Removido'); fetchUsers(); }
   };
 
-  // CATEGORY MANAGEMENT
-  const handleAddCategory = async () => {
+  // ── PRODUCT HANDLERS ──
+  const handleSaveProduct = async () => {
+    if (!productFormData.name || !productFormData.category_id) { toast.error('Preencha nome e categoria'); return; }
+    const payload = {
+      name: productFormData.name,
+      category_id: productFormData.category_id,
+      unit_weight_kg: parseFloat(productFormData.unit_weight_kg) || 0,
+      base_unit: productFormData.base_unit,
+      conversion_factor: parseFloat(productFormData.conversion_factor) || 1,
+      package_type: productFormData.package_type,
+      package_weight: parseFloat(productFormData.package_weight) || 0,
+    };
+    if (editingProductId) {
+      await supabase.from('products').update(payload).eq('id', editingProductId);
+      toast.success('Produto atualizado!');
+    } else {
+      await supabase.from('products').insert(payload);
+      toast.success('Produto criado!');
+    }
+    setShowProductForm(false); setEditingProductId(null);
+    setProductFormData({ name: '', category_id: '', unit_weight_kg: '', base_unit: 'kg', conversion_factor: '1', package_type: 'bulk', package_weight: '0' });
+    fetchProducts();
+  };
+  const handleEditProduct = (p: ProductItem) => {
+    setProductFormData({
+      name: p.name, category_id: p.category_id || '',
+      unit_weight_kg: String(p.unit_weight_kg), base_unit: p.base_unit,
+      conversion_factor: String(p.conversion_factor), package_type: p.package_type,
+      package_weight: String(p.package_weight),
+    });
+    setEditingProductId(p.id); setShowProductForm(true);
+  };
+  const handleDeleteProduct = async (id: string) => {
+    await supabase.from('products').delete().eq('id', id);
+    toast.success('Produto removido'); fetchProducts();
+  };
+
+  // ── CATEGORY HANDLERS ──
+  const handleSaveCategory = async () => {
     if (!categoryFormData.trim()) return;
     if (editingCategoryId) {
       await supabase.from('categories').update({ name: categoryFormData }).eq('id', editingCategoryId);
-      toast.success('Categoria atualizada!');
     } else {
       await supabase.from('categories').insert({ name: categoryFormData });
-      toast.success('Categoria criada!');
     }
-    setCategoryFormData('');
-    setShowCategoryForm(false);
-    setEditingCategoryId(null);
-    fetchCategories();
-    fetchProducts(); // refresh category names
+    toast.success(editingCategoryId ? 'Atualizada!' : 'Criada!');
+    setCategoryFormData(''); setShowCategoryForm(false); setEditingCategoryId(null);
+    fetchCategories(); fetchProducts();
   };
-
   const handleDeleteCategory = async (id: string) => {
     await supabase.from('categories').delete().eq('id', id);
-    toast.success('Categoria removida');
-    fetchCategories();
+    toast.success('Removida'); fetchCategories();
   };
 
-  // PRODUCT MANAGEMENT
-  const handleAddProduct = async () => {
-    if (!productFormData.name || !productFormData.category_id || !productFormData.weight) return;
-    await supabase.from('products').insert({
-      name: productFormData.name,
-      category_id: productFormData.category_id,
-      unit_weight_kg: parseFloat(productFormData.weight),
-    });
-    toast.success(`Produto "${productFormData.name}" criado!`);
-    setProductFormData({ name: '', category_id: '', weight: '' });
-    setShowProductForm(false);
-    fetchProducts();
-  };
-
-  const handleDeleteProduct = async (id: string) => {
-    await supabase.from('products').delete().eq('id', id);
-    toast.success('Produto removido');
-    fetchProducts();
-  };
-
-  const handleUpdateWeight = async (productId: string) => {
-    const newWeight = editingWeights[productId];
-    if (newWeight === undefined) return;
-    await supabase.from('products').update({ unit_weight_kg: newWeight }).eq('id', productId);
-    const { [productId]: _, ...rest } = editingWeights;
-    setEditingWeights(rest);
-    toast.success('Peso atualizado!');
-    fetchProducts();
-  };
-
-  const getRoleLabel = (role: AppRole) => {
-    const labels: Record<AppRole, string> = { admin: '🔐 Admin', gerente: '👔 Gerente', operador: '👷 Operador' };
-    return labels[role];
-  };
-
-  const getRoleColor = (role: AppRole) => {
-    const colors: Record<AppRole, string> = {
-      admin: 'bg-destructive/20 text-destructive border-destructive/50',
-      gerente: 'bg-primary/20 text-primary border-primary/50',
-      operador: 'bg-industrial-success/20 text-industrial-success border-industrial-success/50',
+  // ── FORMULATION HANDLERS ──
+  const handleSaveFormulation = async () => {
+    if (!formulationFormData.name || !formulationFormData.final_product || !formulationFormData.machine) {
+      toast.error('Preencha todos os campos'); return;
+    }
+    const payload = {
+      name: formulationFormData.name,
+      final_product: formulationFormData.final_product,
+      machine: formulationFormData.machine,
+      weight_per_batch: parseFloat(formulationFormData.weight_per_batch) || 0,
     };
-    return colors[role];
+    if (editingFormulationId) {
+      await supabase.from('formulations').update(payload).eq('id', editingFormulationId);
+      toast.success('Formulação atualizada!');
+    } else {
+      await supabase.from('formulations').insert(payload);
+      toast.success('Formulação criada!');
+    }
+    setShowFormulationForm(false); setEditingFormulationId(null);
+    setFormulationFormData({ name: '', final_product: '', machine: '', weight_per_batch: '' });
+    fetchFormulations();
+  };
+  const handleEditFormulation = (f: FormulationItem) => {
+    setFormulationFormData({
+      name: f.name, final_product: f.final_product,
+      machine: f.machine, weight_per_batch: String(f.weight_per_batch),
+    });
+    setEditingFormulationId(f.id); setShowFormulationForm(true);
+  };
+  const handleDeleteFormulation = async (id: string) => {
+    await supabase.from('formulation_items').delete().eq('formulation_id', id);
+    await supabase.from('formulations').delete().eq('id', id);
+    toast.success('Removida'); fetchFormulations();
+  };
+  const handleAddFormulationItem = async () => {
+    if (!showDetailForm || !detailFormData.product_id || !detailFormData.quantity_per_batch) return;
+    await supabase.from('formulation_items').insert({
+      formulation_id: showDetailForm,
+      product_id: detailFormData.product_id,
+      quantity_per_batch: parseFloat(detailFormData.quantity_per_batch) || 0,
+    });
+    toast.success('Item adicionado!');
+    setDetailFormData({ product_id: '', quantity_per_batch: '' });
+    fetchFormulationDetails(showDetailForm);
+  };
+  const handleDeleteFormulationItem = async (id: string, formulationId: string) => {
+    await supabase.from('formulation_items').delete().eq('id', id);
+    toast.success('Removido'); fetchFormulationDetails(formulationId);
   };
 
   const getCategoryName = (catId: string | null) => categories.find(c => c.id === catId)?.name || 'Sem Categoria';
+  const getProductName = (pid: string) => products.find(p => p.id === pid)?.name || pid;
+
+  const getRoleLabel = (r: AppRole) => ({ admin: '🔐 Admin', gerente: '👔 Gerente', operador: '👷 Operador' }[r]);
+  const getRoleColor = (r: AppRole) => ({
+    admin: 'bg-destructive/20 text-destructive border-destructive/50',
+    gerente: 'bg-primary/20 text-primary border-primary/50',
+    operador: 'bg-industrial-success/20 text-industrial-success border-industrial-success/50',
+  }[r]);
+
+  // ── Modal helper ──
+  const Modal = ({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) => (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="bg-card border-2 border-primary rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="bg-secondary px-6 py-5 border-b-2 border-border flex justify-between items-center sticky top-0">
+          <h2 className="text-xl font-bold text-foreground">{title}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-accent rounded-lg touch-target"><X className="w-6 h-6 text-foreground" /></button>
+        </div>
+        <div className="p-6 space-y-4">{children}</div>
+      </div>
+    </div>
+  );
+
+  const Input = ({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) => (
+    <div>
+      <label className="text-foreground font-bold text-xs mb-1 block">{label}</label>
+      <input {...props} className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
+    </div>
+  );
+
+  const Select = ({ label, children, ...props }: { label: string } & React.SelectHTMLAttributes<HTMLSelectElement>) => (
+    <div>
+      <label className="text-foreground font-bold text-xs mb-1 block">{label}</label>
+      <select {...props} className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground font-semibold touch-target">{children}</select>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
         <div className="flex justify-between items-center max-w-7xl mx-auto">
           <div>
@@ -251,25 +282,23 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 border-b-2 border-border bg-card/50 px-2 overflow-x-auto">
-        {[
+        {([
           { id: 'users' as const, label: '👥 Usuários' },
           { id: 'products' as const, label: '📦 Produtos' },
-          { id: 'weights' as const, label: '⚖️ Pesos' },
-        ].map(tab => (
+          { id: 'formulations' as const, label: '🧪 Formulações' },
+          { id: 'locations' as const, label: '📍 Locais' },
+        ]).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`px-5 py-4 font-bold transition-colors whitespace-nowrap touch-target ${
               activeTab === tab.id ? 'text-primary border-b-3 border-primary' : 'text-muted-foreground hover:text-foreground'
-            }`}>
-            {tab.label}
-          </button>
+            }`}>{tab.label}</button>
         ))}
       </div>
 
-      {/* Content */}
       <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
-        {/* USERS TAB */}
+
+        {/* ═══ USERS ═══ */}
         {activeTab === 'users' && (
           <div>
             <div className="mb-6">
@@ -279,42 +308,26 @@ export default function AdminPanel() {
             </div>
 
             {showUserForm && (
-              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                <div className="bg-card border-2 border-primary rounded-2xl w-full max-w-md shadow-2xl">
-                  <div className="bg-secondary px-6 py-5 border-b-2 border-border flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-foreground">{editingUserId ? '✏️ Editar Usuário' : '➕ Novo Usuário'}</h2>
-                    <button onClick={() => { setShowUserForm(false); setEditingUserId(null); }} className="p-2 hover:bg-accent rounded-lg touch-target">
-                      <X className="w-6 h-6 text-foreground" />
-                    </button>
-                  </div>
-                  <div className="p-6 space-y-4">
-                    <input type="text" value={userFormData.name} onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
-                      placeholder="Nome Completo" className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
-                    <input type="text" value={userFormData.username} onChange={(e) => setUserFormData({ ...userFormData, username: e.target.value })}
-                      placeholder="Username (login)" className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
-                    <input type="email" value={userFormData.email} onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
-                      placeholder="E-mail" className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
-                    <input type="password" value={userFormData.password} onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
-                      placeholder="Senha" className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['operador', 'gerente', 'admin'] as AppRole[]).map(role => (
-                        <button key={role} onClick={() => setUserFormData({ ...userFormData, role })}
-                          className={`px-3 py-3 rounded-lg font-bold transition-all border-2 text-sm touch-target ${
-                            userFormData.role === role ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-secondary-foreground border-border hover:bg-secondary'
-                          }`}>
-                          {getRoleLabel(role).split(' ')[1]}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-3 pt-4">
-                      <IndustrialButton size="lg" variant="secondary" onClick={() => { setShowUserForm(false); setEditingUserId(null); }} className="flex-1">Cancelar</IndustrialButton>
-                      <IndustrialButton size="lg" variant="success" onClick={handleAddUser} disabled={userLoading} className="flex-1">
-                        {userLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : editingUserId ? 'Atualizar' : 'Criar'}
-                      </IndustrialButton>
-                    </div>
-                  </div>
+              <Modal title={editingUserId ? '✏️ Editar Usuário' : '➕ Novo Usuário'} onClose={() => { setShowUserForm(false); setEditingUserId(null); }}>
+                <Input label="Nome Completo" value={userFormData.name} onChange={e => setUserFormData({ ...userFormData, name: e.target.value })} />
+                <Input label="Username" value={userFormData.username} onChange={e => setUserFormData({ ...userFormData, username: e.target.value })} />
+                <Input label="E-mail" type="email" value={userFormData.email} onChange={e => setUserFormData({ ...userFormData, email: e.target.value })} />
+                <Input label="Senha" type="password" value={userFormData.password} onChange={e => setUserFormData({ ...userFormData, password: e.target.value })} />
+                <div className="grid grid-cols-3 gap-2">
+                  {(['operador', 'gerente', 'admin'] as AppRole[]).map(role => (
+                    <button key={role} onClick={() => setUserFormData({ ...userFormData, role })}
+                      className={`px-3 py-3 rounded-lg font-bold transition-all border-2 text-sm touch-target ${
+                        userFormData.role === role ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-secondary-foreground border-border hover:bg-secondary'
+                      }`}>{getRoleLabel(role)?.split(' ')[1]}</button>
+                  ))}
                 </div>
-              </div>
+                <div className="flex gap-3 pt-4">
+                  <IndustrialButton size="lg" variant="secondary" onClick={() => setShowUserForm(false)} className="flex-1">Cancelar</IndustrialButton>
+                  <IndustrialButton size="lg" variant="success" onClick={handleAddUser} disabled={userLoading} className="flex-1">
+                    {userLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : editingUserId ? 'Atualizar' : 'Criar'}
+                  </IndustrialButton>
+                </div>
+              </Modal>
             )}
 
             <div className="space-y-3">
@@ -324,18 +337,13 @@ export default function AdminPanel() {
                     <p className="text-foreground font-bold truncate">{u.full_name}</p>
                     <p className="text-muted-foreground text-sm">@{u.username}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getRoleColor(u.role)} whitespace-nowrap`}>
-                    {getRoleLabel(u.role)}
-                  </span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getRoleColor(u.role)} whitespace-nowrap`}>{getRoleLabel(u.role)}</span>
                   <div className="flex gap-2">
-                    <button onClick={() => handleEditUser(u)} className="p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors touch-target">
-                      <Edit2 className="w-5 h-5" />
-                    </button>
+                    <button onClick={() => { setUserFormData({ name: u.full_name, username: u.username, email: '', password: '', role: u.role }); setEditingUserId(u.id); setShowUserForm(true); }}
+                      className="p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors touch-target"><Edit2 className="w-5 h-5" /></button>
                     <button onClick={() => handleDeleteUser(u.id)}
                       className="p-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors disabled:opacity-50 touch-target"
-                      disabled={u.id === user.id}>
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                      disabled={u.id === user.id}><Trash2 className="w-5 h-5" /></button>
                   </div>
                 </div>
               ))}
@@ -344,72 +352,52 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* PRODUCTS TAB */}
+        {/* ═══ PRODUCTS ═══ */}
         {activeTab === 'products' && (
           <div>
             <div className="flex gap-3 mb-6 flex-wrap">
-              <IndustrialButton size="lg" variant="success" onClick={() => setShowCategoryForm(true)} icon={<Plus className="w-5 h-5" />}>
-                Nova Categoria
-              </IndustrialButton>
-              <IndustrialButton size="lg" variant="primary" onClick={() => setShowProductForm(true)} icon={<Plus className="w-5 h-5" />}>
-                Novo Produto
-              </IndustrialButton>
+              <IndustrialButton size="lg" variant="success" onClick={() => setShowCategoryForm(true)} icon={<Plus className="w-5 h-5" />}>Nova Categoria</IndustrialButton>
+              <IndustrialButton size="lg" variant="primary" onClick={() => { setEditingProductId(null); setProductFormData({ name: '', category_id: '', unit_weight_kg: '', base_unit: 'kg', conversion_factor: '1', package_type: 'bulk', package_weight: '0' }); setShowProductForm(true); }} icon={<Plus className="w-5 h-5" />}>Novo Produto</IndustrialButton>
             </div>
 
-            {/* Category Form Modal */}
             {showCategoryForm && (
-              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                <div className="bg-card border-2 border-primary rounded-2xl w-full max-w-md shadow-2xl">
-                  <div className="bg-secondary px-6 py-5 border-b-2 border-border flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-foreground">{editingCategoryId ? '✏️ Editar' : '➕ Nova'} Categoria</h2>
-                    <button onClick={() => { setShowCategoryForm(false); setEditingCategoryId(null); setCategoryFormData(''); }} className="p-2 hover:bg-accent rounded-lg touch-target">
-                      <X className="w-6 h-6 text-foreground" />
-                    </button>
-                  </div>
-                  <div className="p-6 space-y-4">
-                    <input type="text" value={categoryFormData} onChange={(e) => setCategoryFormData(e.target.value)}
-                      placeholder="Nome da Categoria" className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
-                    <div className="flex gap-3 pt-4">
-                      <IndustrialButton size="lg" variant="secondary" onClick={() => { setShowCategoryForm(false); setEditingCategoryId(null); setCategoryFormData(''); }} className="flex-1">Cancelar</IndustrialButton>
-                      <IndustrialButton size="lg" variant="success" onClick={handleAddCategory} className="flex-1">{editingCategoryId ? 'Atualizar' : 'Criar'}</IndustrialButton>
-                    </div>
-                  </div>
+              <Modal title={editingCategoryId ? '✏️ Editar Categoria' : '➕ Nova Categoria'} onClose={() => { setShowCategoryForm(false); setEditingCategoryId(null); setCategoryFormData(''); }}>
+                <Input label="Nome" value={categoryFormData} onChange={e => setCategoryFormData(e.target.value)} />
+                <div className="flex gap-3 pt-4">
+                  <IndustrialButton size="lg" variant="secondary" onClick={() => setShowCategoryForm(false)} className="flex-1">Cancelar</IndustrialButton>
+                  <IndustrialButton size="lg" variant="success" onClick={handleSaveCategory} className="flex-1">{editingCategoryId ? 'Atualizar' : 'Criar'}</IndustrialButton>
                 </div>
-              </div>
+              </Modal>
             )}
 
-            {/* Product Form Modal */}
             {showProductForm && (
-              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                <div className="bg-card border-2 border-primary rounded-2xl w-full max-w-md shadow-2xl">
-                  <div className="bg-secondary px-6 py-5 border-b-2 border-border flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-foreground">➕ Novo Produto</h2>
-                    <button onClick={() => setShowProductForm(false)} className="p-2 hover:bg-accent rounded-lg touch-target">
-                      <X className="w-6 h-6 text-foreground" />
-                    </button>
-                  </div>
-                  <div className="p-6 space-y-4">
-                    <input type="text" value={productFormData.name} onChange={(e) => setProductFormData({ ...productFormData, name: e.target.value })}
-                      placeholder="Nome do Produto" className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
-                    <select value={productFormData.category_id} onChange={(e) => setProductFormData({ ...productFormData, category_id: e.target.value })}
-                      className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground font-semibold touch-target">
-                      <option value="">Selecione a Categoria</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                    <input type="number" value={productFormData.weight} onChange={(e) => setProductFormData({ ...productFormData, weight: e.target.value })}
-                      placeholder="Peso unitário (kg)" className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
-                    <div className="flex gap-3 pt-4">
-                      <IndustrialButton size="lg" variant="secondary" onClick={() => setShowProductForm(false)} className="flex-1">Cancelar</IndustrialButton>
-                      <IndustrialButton size="lg" variant="success" onClick={handleAddProduct} className="flex-1">Criar Produto</IndustrialButton>
-                    </div>
-                  </div>
+              <Modal title={editingProductId ? '✏️ Editar Produto' : '➕ Novo Produto'} onClose={() => { setShowProductForm(false); setEditingProductId(null); }}>
+                <Input label="Nome" value={productFormData.name} onChange={e => setProductFormData({ ...productFormData, name: e.target.value })} />
+                <Select label="Categoria" value={productFormData.category_id} onChange={e => setProductFormData({ ...productFormData, category_id: e.target.value })}>
+                  <option value="">Selecione...</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </Select>
+                <Input label="Peso unitário (kg)" type="number" value={productFormData.unit_weight_kg} onChange={e => setProductFormData({ ...productFormData, unit_weight_kg: e.target.value })} />
+                <Select label="Unidade base" value={productFormData.base_unit} onChange={e => setProductFormData({ ...productFormData, base_unit: e.target.value })}>
+                  <option value="kg">kg</option>
+                  <option value="un">Unidade</option>
+                </Select>
+                <Input label="Fator de conversão" type="number" value={productFormData.conversion_factor} onChange={e => setProductFormData({ ...productFormData, conversion_factor: e.target.value })} />
+                <Select label="Tipo embalagem" value={productFormData.package_type} onChange={e => setProductFormData({ ...productFormData, package_type: e.target.value })}>
+                  <option value="bulk">Granel (bulk)</option>
+                  <option value="unit">Unidade</option>
+                  <option value="sealed_bag">Saco fechado</option>
+                </Select>
+                {productFormData.package_type === 'sealed_bag' && (
+                  <Input label="Peso do saco (kg)" type="number" value={productFormData.package_weight} onChange={e => setProductFormData({ ...productFormData, package_weight: e.target.value })} />
+                )}
+                <div className="flex gap-3 pt-4">
+                  <IndustrialButton size="lg" variant="secondary" onClick={() => setShowProductForm(false)} className="flex-1">Cancelar</IndustrialButton>
+                  <IndustrialButton size="lg" variant="success" onClick={handleSaveProduct} className="flex-1">{editingProductId ? 'Atualizar' : 'Criar'}</IndustrialButton>
                 </div>
-              </div>
+              </Modal>
             )}
 
-            {/* Categories & Products List */}
             <div className="space-y-4">
               {categories.map(category => (
                 <div key={category.id} className="bg-card border-2 border-border rounded-lg overflow-hidden">
@@ -417,13 +405,9 @@ export default function AdminPanel() {
                     <h3 className="text-lg font-bold text-foreground">{category.name}</h3>
                     <div className="flex gap-2">
                       <button onClick={() => { setCategoryFormData(category.name); setEditingCategoryId(category.id); setShowCategoryForm(true); }}
-                        className="p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors touch-target">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
+                        className="p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors touch-target"><Edit2 className="w-4 h-4" /></button>
                       <button onClick={() => handleDeleteCategory(category.id)}
-                        className="p-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors touch-target">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        className="p-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors touch-target"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                   <div className="divide-y divide-border">
@@ -431,16 +415,19 @@ export default function AdminPanel() {
                       <div key={product.id} className="px-4 py-3 flex items-center justify-between">
                         <div>
                           <p className="text-foreground font-semibold text-sm">{product.name}</p>
-                          <p className="text-muted-foreground text-xs">{product.unit_weight_kg}kg/unidade</p>
+                          <p className="text-muted-foreground text-xs">
+                            {product.unit_weight_kg}kg/un • {product.base_unit} • {product.package_type}
+                            {product.package_type === 'sealed_bag' && ` (${product.package_weight}kg/saco)`}
+                          </p>
                         </div>
-                        <button onClick={() => handleDeleteProduct(product.id)}
-                          className="p-2 bg-destructive/80 hover:bg-destructive text-destructive-foreground rounded-lg transition-colors touch-target">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button onClick={() => handleEditProduct(product)} className="p-2 bg-primary/80 hover:bg-primary text-primary-foreground rounded-lg transition-colors touch-target"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteProduct(product.id)} className="p-2 bg-destructive/80 hover:bg-destructive text-destructive-foreground rounded-lg transition-colors touch-target"><Trash2 className="w-4 h-4" /></button>
+                        </div>
                       </div>
                     ))}
                     {products.filter(p => p.category_id === category.id).length === 0 && (
-                      <div className="px-4 py-3 text-muted-foreground text-sm text-center">Nenhum produto nesta categoria</div>
+                      <div className="px-4 py-3 text-muted-foreground text-sm text-center">Nenhum produto</div>
                     )}
                   </div>
                 </div>
@@ -449,31 +436,137 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* WEIGHTS TAB */}
-        {activeTab === 'weights' && (
+        {/* ═══ FORMULATIONS ═══ */}
+        {activeTab === 'formulations' && (
+          <div>
+            <div className="mb-6">
+              <IndustrialButton size="lg" variant="success" onClick={() => { setEditingFormulationId(null); setFormulationFormData({ name: '', final_product: '', machine: '', weight_per_batch: '' }); setShowFormulationForm(true); }} icon={<Plus className="w-6 h-6" />}>
+                Nova Formulação
+              </IndustrialButton>
+            </div>
+
+            {showFormulationForm && (
+              <Modal title={editingFormulationId ? '✏️ Editar Formulação' : '➕ Nova Formulação'} onClose={() => { setShowFormulationForm(false); setEditingFormulationId(null); }}>
+                <Input label="Nome" value={formulationFormData.name} onChange={e => setFormulationFormData({ ...formulationFormData, name: e.target.value })} />
+                <Input label="Produto Final" value={formulationFormData.final_product} onChange={e => setFormulationFormData({ ...formulationFormData, final_product: e.target.value })} placeholder="Ex: Telha, Forro" />
+                <Input label="Máquina" value={formulationFormData.machine} onChange={e => setFormulationFormData({ ...formulationFormData, machine: e.target.value })} placeholder="Ex: Misturador 2" />
+                <Input label="Peso por batida (kg)" type="number" value={formulationFormData.weight_per_batch} onChange={e => setFormulationFormData({ ...formulationFormData, weight_per_batch: e.target.value })} />
+                <div className="flex gap-3 pt-4">
+                  <IndustrialButton size="lg" variant="secondary" onClick={() => setShowFormulationForm(false)} className="flex-1">Cancelar</IndustrialButton>
+                  <IndustrialButton size="lg" variant="success" onClick={handleSaveFormulation} className="flex-1">{editingFormulationId ? 'Atualizar' : 'Criar'}</IndustrialButton>
+                </div>
+              </Modal>
+            )}
+
+            {/* Detail form for adding items to a formulation */}
+            {showDetailForm && (
+              <Modal title="➕ Adicionar Item à Formulação" onClose={() => { setShowDetailForm(null); setDetailFormData({ product_id: '', quantity_per_batch: '' }); }}>
+                <Select label="Matéria-Prima" value={detailFormData.product_id} onChange={e => setDetailFormData({ ...detailFormData, product_id: e.target.value })}>
+                  <option value="">Selecione...</option>
+                  {products.map(p => <option key={p.id} value={p.id}>{p.name} ({getCategoryName(p.category_id)})</option>)}
+                </Select>
+                <Input label="Quantidade por batida (kg)" type="number" value={detailFormData.quantity_per_batch} onChange={e => setDetailFormData({ ...detailFormData, quantity_per_batch: e.target.value })} />
+                <div className="flex gap-3 pt-4">
+                  <IndustrialButton size="lg" variant="secondary" onClick={() => setShowDetailForm(null)} className="flex-1">Cancelar</IndustrialButton>
+                  <IndustrialButton size="lg" variant="success" onClick={handleAddFormulationItem} className="flex-1">Adicionar</IndustrialButton>
+                </div>
+              </Modal>
+            )}
+
+            <div className="space-y-4">
+              {formulations.map(f => (
+                <div key={f.id} className="bg-card border-2 border-border rounded-lg overflow-hidden">
+                  <div className="flex justify-between items-center p-4 bg-secondary">
+                    <div>
+                      <h3 className="text-foreground font-bold">{f.name}</h3>
+                      <p className="text-muted-foreground text-xs">{f.final_product} • {f.machine} • {f.weight_per_batch}kg/batida</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => { fetchFormulationDetails(f.id); setShowDetailForm(f.id); }}
+                        className="p-2 bg-industrial-success hover:bg-industrial-success/90 text-industrial-success-foreground rounded-lg transition-colors touch-target"><Plus className="w-4 h-4" /></button>
+                      <button onClick={() => handleEditFormulation(f)}
+                        className="p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors touch-target"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteFormulation(f.id)}
+                        className="p-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors touch-target"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                  {/* Show items inline when expanded */}
+                  <FormulationItemsList formulationId={f.id} products={products} getCategoryName={getCategoryName} onDelete={handleDeleteFormulationItem} />
+                </div>
+              ))}
+              {formulations.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma formulação cadastrada</p>}
+            </div>
+          </div>
+        )}
+
+        {/* ═══ LOCATIONS ═══ */}
+        {activeTab === 'locations' && (
           <div className="space-y-3">
-            {products.map(product => (
-              <div key={product.id} className="bg-card border-2 border-border rounded-lg p-4 flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-foreground font-semibold text-sm truncate">{product.name}</p>
-                  <p className="text-muted-foreground text-xs">{getCategoryName(product.category_id)}</p>
+            {locations.map(loc => (
+              <div key={loc.id} className="bg-card border-2 border-border rounded-lg p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-foreground font-bold">{loc.name}</p>
+                  <p className="text-muted-foreground text-xs">Código: {loc.code} • Ordem: {loc.sort_order}</p>
+                  {loc.description && <p className="text-muted-foreground text-xs">{loc.description}</p>}
                 </div>
-                <div className="flex items-center gap-2">
-                  <input type="number"
-                    value={editingWeights[product.id] ?? product.unit_weight_kg}
-                    onChange={(e) => setEditingWeights({ ...editingWeights, [product.id]: parseFloat(e.target.value) })}
-                    className="w-20 px-2 py-2 bg-input border-2 border-border rounded text-foreground text-center font-semibold text-sm touch-target" />
-                  <span className="text-muted-foreground text-xs">kg</span>
-                  <button onClick={() => handleUpdateWeight(product.id)}
-                    className="px-3 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors font-semibold text-sm touch-target">
-                    Salvar
-                  </button>
-                </div>
+                <span className={`px-2 py-1 rounded text-xs font-bold ${loc.active ? 'bg-industrial-success/20 text-industrial-success' : 'bg-destructive/20 text-destructive'}`}>
+                  {loc.active ? 'Ativo' : 'Inativo'}
+                </span>
               </div>
             ))}
+            {locations.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhum local cadastrado</p>}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Sub-component for loading formulation items on demand
+function FormulationItemsList({ formulationId, products, getCategoryName, onDelete }: {
+  formulationId: string;
+  products: { id: string; name: string; category_id: string | null }[];
+  getCategoryName: (id: string | null) => string;
+  onDelete: (id: string, formulationId: string) => void;
+}) {
+  const [items, setItems] = useState<{ id: string; product_id: string; quantity_per_batch: number; unit: string }[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.from('formulation_items').select('*').eq('formulation_id', formulationId);
+    if (data) setItems(data as any);
+    setLoaded(true);
+  }, [formulationId]);
+
+  if (!loaded) {
+    return (
+      <div className="px-4 py-2">
+        <button onClick={load} className="text-primary text-xs font-bold hover:underline">
+          Carregar itens...
+        </button>
+      </div>
+    );
+  }
+
+  if (items.length === 0) return <div className="px-4 py-2 text-muted-foreground text-xs">Nenhum item</div>;
+
+  return (
+    <div className="divide-y divide-border">
+      {items.map(item => {
+        const product = products.find(p => p.id === item.product_id);
+        return (
+          <div key={item.id} className="px-4 py-2 flex items-center justify-between">
+            <div>
+              <p className="text-foreground text-sm font-semibold">{product?.name || item.product_id}</p>
+              <p className="text-muted-foreground text-xs">{item.quantity_per_batch} {item.unit}/batida</p>
+            </div>
+            <button onClick={() => onDelete(item.id, formulationId)}
+              className="p-1 bg-destructive/80 hover:bg-destructive text-destructive-foreground rounded transition-colors">
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -189,38 +189,53 @@ export type Database = {
       }
       production_batches: {
         Row: {
+          batch_code: string | null
           batch_count: number
+          batches: number | null
           completed_at: string | null
           created_at: string | null
+          final_product: string | null
           formulation_id: string
           id: string
+          machine: string | null
           notes: string | null
           produced_by: string | null
           produced_by_name: string | null
+          production_order_id: string | null
           status: string
           total_compound_kg: number
         }
         Insert: {
+          batch_code?: string | null
           batch_count?: number
+          batches?: number | null
           completed_at?: string | null
           created_at?: string | null
+          final_product?: string | null
           formulation_id: string
           id?: string
+          machine?: string | null
           notes?: string | null
           produced_by?: string | null
           produced_by_name?: string | null
+          production_order_id?: string | null
           status?: string
           total_compound_kg?: number
         }
         Update: {
+          batch_code?: string | null
           batch_count?: number
+          batches?: number | null
           completed_at?: string | null
           created_at?: string | null
+          final_product?: string | null
           formulation_id?: string
           id?: string
+          machine?: string | null
           notes?: string | null
           produced_by?: string | null
           produced_by_name?: string | null
+          production_order_id?: string | null
           status?: string
           total_compound_kg?: number
         }
@@ -230,6 +245,13 @@ export type Database = {
             columns: ["formulation_id"]
             isOneToOne: false
             referencedRelation: "formulations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_batches_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -503,6 +525,7 @@ export type Database = {
       }
       stock_movements: {
         Row: {
+          batch_id: string | null
           created_at: string | null
           id: string
           location_code: string
@@ -518,6 +541,7 @@ export type Database = {
           user_name: string | null
         }
         Insert: {
+          batch_id?: string | null
           created_at?: string | null
           id?: string
           location_code: string
@@ -533,6 +557,7 @@ export type Database = {
           user_name?: string | null
         }
         Update: {
+          batch_id?: string | null
           created_at?: string | null
           id?: string
           location_code?: string
@@ -548,6 +573,13 @@ export type Database = {
           user_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "stock_movements_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stock_movements_location_code_fkey"
             columns: ["location_code"]
@@ -610,6 +642,7 @@ export type Database = {
       }
       transfer_items: {
         Row: {
+          batch_id: string | null
           created_at: string | null
           id: string
           product_id: string
@@ -622,6 +655,7 @@ export type Database = {
           transfer_id: string
         }
         Insert: {
+          batch_id?: string | null
           created_at?: string | null
           id?: string
           product_id: string
@@ -634,6 +668,7 @@ export type Database = {
           transfer_id: string
         }
         Update: {
+          batch_id?: string | null
           created_at?: string | null
           id?: string
           product_id?: string
@@ -646,6 +681,13 @@ export type Database = {
           transfer_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transfer_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transfer_items_product_id_fkey"
             columns: ["product_id"]
@@ -742,6 +784,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_production: {
+        Args: {
+          p_batches: number
+          p_final_product: string
+          p_formulation_id: string
+          p_items?: Json
+          p_machine: string
+          p_notes?: string
+          p_total_compound_kg: number
+          p_user_id: string
+          p_user_name: string
+          p_weight_per_batch: number
+        }
+        Returns: Json
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

@@ -29,6 +29,24 @@ export interface ProductionOrderItem {
   package_weight: number;
 }
 
+export interface ProductionBatch {
+  id: string;
+  production_order_id: string | null;
+  batch_code: string | null;
+  final_product: string | null;
+  machine: string | null;
+  batches: number | null;
+  formulation_id: string;
+  batch_count: number;
+  total_compound_kg: number;
+  status: string;
+  produced_by: string | null;
+  produced_by_name: string | null;
+  completed_at: string | null;
+  created_at: string;
+  notes: string | null;
+}
+
 export function useFormulations() {
   const [formulations, setFormulations] = useState<Formulation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,15 +100,19 @@ export function useProductionOrders() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  const createOrder = useCallback(async (order: {
+  /**
+   * Atomic production confirmation via PostgreSQL RPC.
+   * All steps happen in a single transaction — if any fails, everything rolls back.
+   */
+  const confirmProduction = useCallback(async (params: {
     formulation_id: string;
     final_product: string;
     machine: string;
     batches: number;
     weight_per_batch: number;
     total_compound_kg: number;
-    created_by: string;
-    created_by_name: string;
+    user_id: string;
+    user_name: string;
     notes?: string;
     items: Array<{
       product_id: string;
@@ -101,41 +123,42 @@ export function useProductionOrders() {
       package_weight: number;
     }>;
   }) => {
-    // Insert production order
-    const { data: po, error: poErr } = await supabase
-      .from('production_orders')
-      .insert({
-        formulation_id: order.formulation_id,
-        final_product: order.final_product,
-        machine: order.machine,
-        batches: order.batches,
-        weight_per_batch: order.weight_per_batch,
-        total_compound_kg: order.total_compound_kg,
-        status: 'confirmed',
-        created_by: order.created_by,
-        created_by_name: order.created_by_name,
-        confirmed_at: new Date().toISOString(),
-        notes: order.notes || null,
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc('confirm_production', {
+      p_formulation_id: params.formulation_id,
+      p_final_product: params.final_product,
+      p_machine: params.machine,
+      p_batches: params.batches,
+      p_weight_per_batch: params.weight_per_batch,
+      p_total_compound_kg: params.total_compound_kg,
+      p_user_id: params.user_id,
+      p_user_name: params.user_name,
+      p_notes: params.notes || null,
+      p_items: JSON.stringify(params.items),
+    });
 
-    if (poErr || !po) return { error: poErr, data: null };
-
-    // Insert order items
-    const orderItems = order.items.map(item => ({
-      production_order_id: po.id,
-      ...item,
-    }));
-    const { error: itemsErr } = await supabase
-      .from('production_order_items')
-      .insert(orderItems);
-
-    if (itemsErr) return { error: itemsErr, data: null };
-
+    if (error) return { error, data: null };
     await fetchOrders();
-    return { data: po, error: null };
+    return { data: data as { order_id: string; batch_id: string; batch_code: string; transfer_id: string; success: boolean }, error: null };
   }, [fetchOrders]);
 
-  return { orders, loading, createOrder, refetch: fetchOrders };
+  return { orders, loading, confirmProduction, refetch: fetchOrders };
+}
+
+export function useProductionBatches() {
+  const [batches, setBatches] = useState<ProductionBatch[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchBatches = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('production_batches')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (!error && data) setBatches(data as unknown as ProductionBatch[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchBatches(); }, [fetchBatches]);
+
+  return { batches, loading, refetch: fetchBatches };
 }
