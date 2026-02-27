@@ -235,8 +235,11 @@ export default function CDStockEntry() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setLocation('/operator')} className="p-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors touch-target">
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <div className="flex-1">
             <h1 className="text-2xl font-black text-foreground">📥 Entrada CD</h1>
             <p className="text-muted-foreground text-sm">{user.fullName} • Registro de Entrada</p>
           </div>

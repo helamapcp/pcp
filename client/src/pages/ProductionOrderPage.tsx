@@ -20,11 +20,12 @@ export default function ProductionOrderPage() {
   const [step, setStep] = useState<Step>('configure');
   const [selectedProduct, setSelectedProduct] = useState('');
   const [selectedMachine, setSelectedMachine] = useState('');
-  const [batches, setBatches] = useState(1);
+  const [batchesStr, setBatchesStr] = useState('1');
   const [submitting, setSubmitting] = useState(false);
   const [summary, setSummary] = useState<ProductionSummary | null>(null);
   const [resultBatchCode, setResultBatchCode] = useState<string | null>(null);
-  const [overrides, setOverrides] = useState<Record<string, number>>({});
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const batches = Math.max(1, parseInt(batchesStr) || 1);
   const [justifications, setJustifications] = useState<Record<string, string>>({});
 
   const finalProducts = useMemo(() => [...new Set(formulations.map(f => f.final_product))], [formulations]);
@@ -67,13 +68,20 @@ export default function ProductionOrderPage() {
   };
 
   const getEffectiveAdjusted = (item: CalculatedItem) => {
-    return overrides[item.product_id] ?? item.adjusted_quantity_kg;
+    const ov = overrides[item.product_id];
+    if (ov !== undefined) {
+      const parsed = parseFloat(ov);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return item.adjusted_quantity_kg;
   };
 
   // Package validation: sealed_bag overrides must be multiples of package_weight
   const getPackageError = (item: CalculatedItem): string | null => {
-    const val = overrides[item.product_id];
-    if (val === undefined) return null;
+    const ov = overrides[item.product_id];
+    if (ov === undefined) return null;
+    const val = parseFloat(ov);
+    if (isNaN(val)) return null;
     if (item.package_type === 'sealed_bag' && item.package_weight > 0) {
       const remainder = val % item.package_weight;
       if (remainder > 0.001) {
@@ -85,8 +93,10 @@ export default function ProductionOrderPage() {
 
   // Check if item has a manual override (different from natural rounding)
   const isManualOverride = (item: CalculatedItem): boolean => {
-    const val = overrides[item.product_id];
-    if (val === undefined) return false;
+    const ov = overrides[item.product_id];
+    if (ov === undefined) return false;
+    const val = parseFloat(ov);
+    if (isNaN(val)) return false;
     return Math.abs(val - item.adjusted_quantity_kg) > 0.001;
   };
 
@@ -199,8 +209,8 @@ export default function ProductionOrderPage() {
                 <label className="text-foreground font-bold text-sm flex items-center gap-1">
                   <Hash className="w-4 h-4" /> Número de Batidas
                 </label>
-                <input type="number" min={1} max={999} value={batches}
-                  onChange={e => setBatches(Math.max(1, parseInt(e.target.value) || 1))}
+                <input type="text" inputMode="numeric" value={batchesStr}
+                  onChange={e => setBatchesStr(e.target.value)}
                   className="w-full bg-input border-2 border-border rounded-lg p-3 text-foreground font-bold text-2xl text-center touch-target" />
               </div>
 
@@ -269,9 +279,10 @@ export default function ProductionOrderPage() {
                         </div>
                         <div>
                           <p className="text-muted-foreground">Ajustado</p>
-                          <input type="number" step="0.01" min={0} value={effectiveAdj}
+                          <input type="text" inputMode="decimal"
+                            value={overrides[item.product_id] !== undefined ? overrides[item.product_id] : effectiveAdj}
                             onChange={e => setOverrides(prev => ({
-                              ...prev, [item.product_id]: Math.max(0, parseFloat(e.target.value) || 0),
+                              ...prev, [item.product_id]: e.target.value,
                             }))}
                             className={`w-full bg-input border rounded px-2 py-1 text-foreground font-bold text-sm ${pkgErr ? 'border-destructive' : 'border-border'}`} />
                           {pkgErr && <p className="text-destructive text-[10px] mt-1">{pkgErr}</p>}
@@ -363,7 +374,7 @@ export default function ProductionOrderPage() {
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => { setStep('configure'); setSummary(null); setSelectedProduct(''); setSelectedMachine(''); setBatches(1); setResultBatchCode(null); }}
+              <button onClick={() => { setStep('configure'); setSummary(null); setSelectedProduct(''); setSelectedMachine(''); setBatchesStr('1'); setResultBatchCode(null); }}
                 className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 rounded-xl transition-colors touch-target">
                 NOVA PRODUÇÃO
               </button>
