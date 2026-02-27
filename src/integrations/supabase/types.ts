@@ -32,6 +32,81 @@ export type Database = {
         }
         Relationships: []
       }
+      formulation_items: {
+        Row: {
+          created_at: string | null
+          formulation_id: string
+          id: string
+          product_id: string
+          quantity_per_batch: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string | null
+          formulation_id: string
+          id?: string
+          product_id: string
+          quantity_per_batch?: number
+          unit?: string
+        }
+        Update: {
+          created_at?: string | null
+          formulation_id?: string
+          id?: string
+          product_id?: string
+          quantity_per_batch?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formulation_items_formulation_id_fkey"
+            columns: ["formulation_id"]
+            isOneToOne: false
+            referencedRelation: "formulations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formulation_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formulations: {
+        Row: {
+          active: boolean
+          created_at: string | null
+          final_product: string
+          id: string
+          machine: string
+          name: string
+          updated_at: string | null
+          weight_per_batch: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string | null
+          final_product: string
+          id?: string
+          machine: string
+          name: string
+          updated_at?: string | null
+          weight_per_batch?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string | null
+          final_product?: string
+          id?: string
+          machine?: string
+          name?: string
+          updated_at?: string | null
+          weight_per_batch?: number
+        }
+        Relationships: []
+      }
       inventory_logs: {
         Row: {
           action_type: string
@@ -82,26 +157,115 @@ export type Database = {
           },
         ]
       }
+      locations: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      production_batches: {
+        Row: {
+          batch_count: number
+          completed_at: string | null
+          created_at: string | null
+          formulation_id: string
+          id: string
+          notes: string | null
+          produced_by: string | null
+          produced_by_name: string | null
+          status: string
+          total_compound_kg: number
+        }
+        Insert: {
+          batch_count?: number
+          completed_at?: string | null
+          created_at?: string | null
+          formulation_id: string
+          id?: string
+          notes?: string | null
+          produced_by?: string | null
+          produced_by_name?: string | null
+          status?: string
+          total_compound_kg?: number
+        }
+        Update: {
+          batch_count?: number
+          completed_at?: string | null
+          created_at?: string | null
+          formulation_id?: string
+          id?: string
+          notes?: string | null
+          produced_by?: string | null
+          produced_by_name?: string | null
+          status?: string
+          total_compound_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batches_formulation_id_fkey"
+            columns: ["formulation_id"]
+            isOneToOne: false
+            referencedRelation: "formulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
+          base_unit: string
           category_id: string | null
+          conversion_factor: number
           created_at: string | null
           id: string
           name: string
+          package_type: string
+          package_weight: number
           unit_weight_kg: number
         }
         Insert: {
+          base_unit?: string
           category_id?: string | null
+          conversion_factor?: number
           created_at?: string | null
           id?: string
           name: string
+          package_type?: string
+          package_weight?: number
           unit_weight_kg?: number
         }
         Update: {
+          base_unit?: string
           category_id?: string | null
+          conversion_factor?: number
           created_at?: string | null
           id?: string
           name?: string
+          package_type?: string
+          package_weight?: number
           unit_weight_kg?: number
         }
         Relationships: [
@@ -182,6 +346,117 @@ export type Database = {
           },
         ]
       }
+      stock: {
+        Row: {
+          id: string
+          location_code: string
+          product_id: string
+          quantity: number
+          total_kg: number
+          unit: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          location_code: string
+          product_id: string
+          quantity?: number
+          total_kg?: number
+          unit?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          location_code?: string
+          product_id?: string
+          quantity?: number
+          total_kg?: number
+          unit?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_location_code_fkey"
+            columns: ["location_code"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          created_at: string | null
+          id: string
+          location_code: string
+          movement_type: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          reference_id: string | null
+          reference_type: string | null
+          total_kg: number
+          unit: string
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          location_code: string
+          movement_type: string
+          notes?: string | null
+          product_id: string
+          quantity: number
+          reference_id?: string | null
+          reference_type?: string | null
+          total_kg?: number
+          unit?: string
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          location_code?: string
+          movement_type?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          total_kg?: number
+          unit?: string
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_location_code_fkey"
+            columns: ["location_code"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_snapshots: {
         Row: {
           created_at: string | null
@@ -223,6 +498,117 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      transfer_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          product_id: string
+          requested_quantity: number
+          requested_unit: string
+          sent_quantity: number
+          sent_total_kg: number
+          sent_unit: string
+          status: string
+          transfer_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          product_id: string
+          requested_quantity?: number
+          requested_unit?: string
+          sent_quantity?: number
+          sent_total_kg?: number
+          sent_unit?: string
+          status?: string
+          transfer_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          product_id?: string
+          requested_quantity?: number
+          requested_unit?: string
+          sent_quantity?: number
+          sent_total_kg?: number
+          sent_unit?: string
+          status?: string
+          transfer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfer_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfer_items_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: false
+            referencedRelation: "transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transfers: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          confirmed_by_name: string | null
+          created_at: string | null
+          from_location: string
+          id: string
+          notes: string | null
+          requested_by: string | null
+          requested_by_name: string | null
+          status: string
+          to_location: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          confirmed_by_name?: string | null
+          created_at?: string | null
+          from_location: string
+          id?: string
+          notes?: string | null
+          requested_by?: string | null
+          requested_by_name?: string | null
+          status?: string
+          to_location: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          confirmed_by_name?: string | null
+          created_at?: string | null
+          from_location?: string
+          id?: string
+          notes?: string | null
+          requested_by?: string | null
+          requested_by_name?: string | null
+          status?: string
+          to_location?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfers_from_location_fkey"
+            columns: ["from_location"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "transfers_to_location_fkey"
+            columns: ["to_location"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["code"]
           },
         ]
       }
