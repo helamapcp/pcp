@@ -25,6 +25,7 @@ export default function ProductionOrderPage() {
   const [summary, setSummary] = useState<ProductionSummary | null>(null);
   const [resultBatchCode, setResultBatchCode] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, number>>({});
+  const [justifications, setJustifications] = useState<Record<string, string>>({});
 
   const finalProducts = useMemo(() => [...new Set(formulations.map(f => f.final_product))], [formulations]);
   const machines = useMemo(() => {
@@ -61,6 +62,7 @@ export default function ProductionOrderPage() {
     const result = calculateProduction(matchedFormulation, formulationItems, batches, productsMap, pcpStockMap);
     setSummary(result);
     setOverrides({});
+    setJustifications({});
     setStep('review');
   };
 
@@ -81,13 +83,27 @@ export default function ProductionOrderPage() {
     return null;
   };
 
+  // Check if item has a manual override (different from natural rounding)
+  const isManualOverride = (item: CalculatedItem): boolean => {
+    const val = overrides[item.product_id];
+    if (val === undefined) return false;
+    return Math.abs(val - item.adjusted_quantity_kg) > 0.001;
+  };
+
+  const getJustificationError = (item: CalculatedItem): string | null => {
+    if (!isManualOverride(item)) return null;
+    const j = justifications[item.product_id];
+    if (!j || j.trim().length === 0) return 'Justificativa obrigatória para ajuste manual';
+    return null;
+  };
+
   const allStockOk = useMemo(() => {
     if (!summary) return false;
     return summary.items.every(i => {
       const adj = getEffectiveAdjusted(i);
-      return i.pcp_available_kg >= adj && !getPackageError(i);
+      return i.pcp_available_kg >= adj && !getPackageError(i) && !getJustificationError(i);
     });
-  }, [summary, overrides]);
+  }, [summary, overrides, justifications]);
 
   const handleConfirm = async () => {
     if (!summary || !user || !matchedFormulation) return;
@@ -103,6 +119,7 @@ export default function ProductionOrderPage() {
           difference_kg: adj - item.ideal_quantity_kg,
           package_type: item.package_type,
           package_weight: item.package_weight,
+          justification: isManualOverride(item) ? justifications[item.product_id] || null : null,
         };
       });
 
@@ -274,6 +291,24 @@ export default function ProductionOrderPage() {
                             {item.sacks_required} sacos × {item.package_weight}kg = {item.adjusted_quantity_kg.toFixed(2)}kg
                             {item.difference_kg > 0 && ` (+${item.difference_kg.toFixed(2)}kg excedente)`}
                           </p>
+                        </div>
+                      )}
+
+                      {isManualOverride(item) && (
+                        <div className="mt-2">
+                          <label className="text-destructive text-xs font-bold">⚠ Justificativa (obrigatória):</label>
+                          <input
+                            type="text"
+                            placeholder="Ex: Saco danificado, ajuste de lote..."
+                            value={justifications[item.product_id] || ''}
+                            onChange={e => setJustifications(prev => ({ ...prev, [item.product_id]: e.target.value }))}
+                            className={`w-full mt-1 bg-input border rounded px-2 py-1 text-foreground text-xs ${
+                              getJustificationError(item) ? 'border-destructive' : 'border-border'
+                            }`}
+                          />
+                          {getJustificationError(item) && (
+                            <p className="text-destructive text-[10px] mt-1">{getJustificationError(item)}</p>
+                          )}
                         </div>
                       )}
                     </div>
