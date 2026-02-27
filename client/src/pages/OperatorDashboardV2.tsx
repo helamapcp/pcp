@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Package, ArrowRightLeft, BarChart3 } from 'lucide-react';
+import { LogOut, Package, ArrowRightLeft, Factory } from 'lucide-react';
 
 export default function OperatorDashboardV2() {
   const [, setLocation] = useLocation();
@@ -33,6 +33,14 @@ export default function OperatorDashboardV2() {
       path: '/operator/transfer-cd-pcp',
       color: 'border-primary hover:bg-primary/10',
       iconColor: 'text-primary',
+    },
+    {
+      label: 'Produção PCP → PMP',
+      description: 'Ordem de produção com formulação',
+      icon: Factory,
+      path: '/operator/production',
+      color: 'border-industrial-warning hover:bg-industrial-warning/10',
+      iconColor: 'text-industrial-warning',
     },
   ];
 
