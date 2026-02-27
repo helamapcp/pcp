@@ -107,6 +107,107 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_count_items: {
+        Row: {
+          counted_quantity: number
+          counted_total_kg: number
+          created_at: string | null
+          difference_kg: number
+          id: string
+          inventory_count_id: string
+          justification: string | null
+          product_id: string
+          system_quantity: number
+          system_total_kg: number
+        }
+        Insert: {
+          counted_quantity?: number
+          counted_total_kg?: number
+          created_at?: string | null
+          difference_kg?: number
+          id?: string
+          inventory_count_id: string
+          justification?: string | null
+          product_id: string
+          system_quantity?: number
+          system_total_kg?: number
+        }
+        Update: {
+          counted_quantity?: number
+          counted_total_kg?: number
+          created_at?: string | null
+          difference_kg?: number
+          id?: string
+          inventory_count_id?: string
+          justification?: string | null
+          product_id?: string
+          system_quantity?: number
+          system_total_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_count_items_inventory_count_id_fkey"
+            columns: ["inventory_count_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_count_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_counts: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          confirmed_by_name: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          id: string
+          location_code: string
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          confirmed_by_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          location_code: string
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          confirmed_by_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          location_code?: string
+          notes?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_counts_location_code_fkey"
+            columns: ["location_code"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       inventory_logs: {
         Row: {
           action_type: string
@@ -516,6 +617,72 @@ export type Database = {
           },
           {
             foreignKeyName: "stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_adjustments: {
+        Row: {
+          created_at: string | null
+          difference_kg: number
+          id: string
+          location_code: string
+          new_quantity: number
+          new_total_kg: number
+          old_quantity: number
+          old_total_kg: number
+          product_id: string
+          reason: string | null
+          reference_id: string | null
+          reference_type: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          difference_kg?: number
+          id?: string
+          location_code: string
+          new_quantity?: number
+          new_total_kg?: number
+          old_quantity?: number
+          old_total_kg?: number
+          product_id: string
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          difference_kg?: number
+          id?: string
+          location_code?: string
+          new_quantity?: number
+          new_total_kg?: number
+          old_quantity?: number
+          old_total_kg?: number
+          product_id?: string
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_adjustments_location_code_fkey"
+            columns: ["location_code"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "stock_adjustments_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
