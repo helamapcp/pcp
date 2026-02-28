@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIndustrialProducts, useStock, useStockMovements, convertToKg } from '@/hooks/useIndustrialData';
+import { useIndustrialProducts, useStock, convertToKg } from '@/hooks/useIndustrialData';
+import { stockEntryRPC } from '@/services/stockService';
 import { IndustrialButton } from '@/components/IndustrialButton';
 import { LogOut, Package, Plus, Check, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -10,8 +11,7 @@ export default function CDStockEntry() {
   const [, setLocation] = useLocation();
   const { user, signOut } = useAuth();
   const { products } = useIndustrialProducts();
-  const { getStock, upsertStock } = useStock();
-  const { addMovement } = useStockMovements();
+  const { getStock, refetch: refetchStock } = useStock();
 
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('');
@@ -34,8 +34,8 @@ export default function CDStockEntry() {
   const currentStock = product ? getStock(product.id, 'CD') : undefined;
   const parsedQty = parseFloat(quantity) || 0;
 
+  // Preview conversion (display only — real conversion is server-side)
   const totalKg = product ? convertToKg(parsedQty, unit, product) : 0;
-  const newStockQty = (currentStock?.quantity || 0) + parsedQty;
   const newStockKg = (Number(currentStock?.total_kg) || 0) + totalKg;
 
   const filteredProducts = products.filter(p =>
@@ -50,26 +50,24 @@ export default function CDStockEntry() {
     setSubmitting(true);
 
     try {
-      // Update stock
-      await upsertStock(product.id, 'CD', newStockQty, unit, newStockKg, user.id);
-
-      // Record movement
-      await addMovement({
-        product_id: product.id,
-        location_code: 'CD',
-        movement_type: 'entry',
-        quantity: parsedQty,
+      // Use server-side RPC for entry — conversion happens in DB
+      const { data, error } = await stockEntryRPC(
+        product.id,
+        'CD',
+        parsedQty,
         unit,
-        total_kg: totalKg,
-        reference_type: 'manual',
-        reference_id: null,
-        notes: `Entrada no CD: ${parsedQty} ${unit === 'units' ? 'unidades' : 'kg'}`,
-        user_id: user.id,
-        user_name: user.fullName,
-      });
+        user.id,
+        user.fullName,
+        `Entrada no CD: ${parsedQty} ${unit === 'units' ? 'unidades' : 'kg'}`
+      );
+
+      if (error) throw error;
+
+      const resultKg = (data as any)?.total_kg || totalKg;
+      await refetchStock();
 
       toast.success(
-        `✓ Entrada Registrada\n${product.name}\n${parsedQty} ${unit === 'units' ? 'unidades' : 'kg'} (${totalKg.toFixed(1)} kg)`,
+        `✓ Entrada Registrada\n${product.name}\n${parsedQty} ${unit === 'units' ? 'unidades' : 'kg'} (${resultKg.toFixed ? resultKg.toFixed(1) : resultKg} kg)`,
         { duration: 4000 }
       );
 
@@ -78,8 +76,8 @@ export default function CDStockEntry() {
       setQuantity('');
       setUnit('kg');
       setShowConfirm(false);
-    } catch (err) {
-      toast.error('Erro ao registrar entrada. Tente novamente.');
+    } catch (err: any) {
+      toast.error('Erro ao registrar entrada: ' + (err.message || err));
     }
 
     setSubmitting(false);
@@ -110,7 +108,7 @@ export default function CDStockEntry() {
                 <p className="text-muted-foreground text-xs">{unit === 'units' ? 'unidades' : 'kg'}</p>
               </div>
               <div className="bg-secondary rounded-lg p-4">
-                <p className="text-muted-foreground text-xs font-bold">TOTAL KG</p>
+                <p className="text-muted-foreground text-xs font-bold">TOTAL KG (estimado)</p>
                 <p className="text-foreground text-2xl font-black">{totalKg.toFixed(1)}</p>
                 <p className="text-muted-foreground text-xs">quilogramas</p>
               </div>
@@ -200,7 +198,7 @@ export default function CDStockEntry() {
             <div>
               <label className="block text-foreground font-bold text-sm mb-2">Quantidade</label>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
@@ -208,9 +206,12 @@ export default function CDStockEntry() {
                 className="w-full px-4 py-4 bg-input border-2 border-border rounded-lg text-foreground text-2xl font-black text-center placeholder-muted-foreground touch-target"
                 autoFocus
               />
-              {parsedQty > 0 && unit === 'units' && product.unit_weight_kg > 0 && (
+              {parsedQty > 0 && unit === 'units' && (
                 <p className="text-muted-foreground text-sm mt-2 text-center">
                   = {totalKg.toFixed(1)} kg
+                  {product.package_type === 'sealed_bag' && product.package_weight > 0 && (
+                    <span className="text-primary"> ({parsedQty} × {product.package_weight}kg)</span>
+                  )}
                 </p>
               )}
             </div>
@@ -252,7 +253,7 @@ export default function CDStockEntry() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <div className="bg-card border-2 border-border rounded-lg p-4">
           <p className="text-muted-foreground text-sm">
-            💡 <span className="font-semibold text-foreground">Entrada Simplificada:</span> Selecione o produto e informe a quantidade recebida.
+            💡 <span className="font-semibold text-foreground">Entrada Simplificada:</span> Selecione o produto e informe a quantidade recebida. Conversão de unidades é feita no servidor.
           </p>
         </div>
 

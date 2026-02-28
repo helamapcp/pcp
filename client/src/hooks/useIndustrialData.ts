@@ -395,12 +395,21 @@ export function useTransfers() {
 
 export function convertToKg(quantity: number, unit: string, product: Product): number {
   if (unit === 'kg') return quantity;
-  // units → kg
+  // For sealed bags, use package_weight (e.g., 10 bags × 25kg = 250kg)
+  if (product.package_type === 'sealed_bag' && product.package_weight > 0) {
+    return quantity * product.package_weight;
+  }
+  // For other unit products, use unit_weight_kg
   return quantity * product.unit_weight_kg;
 }
 
 export function convertFromKg(kg: number, unit: string, product: Product): number {
   if (unit === 'kg') return kg;
+  // For sealed bags, use package_weight
+  if (product.package_type === 'sealed_bag' && product.package_weight > 0) {
+    if (product.package_weight === 0) return 0;
+    return kg / product.package_weight;
+  }
   if (product.unit_weight_kg === 0) return 0;
   return kg / product.unit_weight_kg;
 }
