@@ -8,6 +8,88 @@ import { toast } from 'sonner';
 
 type AppRole = 'admin' | 'gerente' | 'operador';
 
+// ── Stable sub-components (OUTSIDE render to prevent remounting) ──
+function AdminModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="bg-card border-2 border-primary rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="bg-secondary px-6 py-5 border-b-2 border-border flex justify-between items-center sticky top-0">
+          <h2 className="text-xl font-bold text-foreground">{title}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-accent rounded-lg touch-target"><X className="w-6 h-6 text-foreground" /></button>
+        </div>
+        <div className="p-6 space-y-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function AdminInput({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div>
+      <label className="text-foreground font-bold text-xs mb-1 block">{label}</label>
+      <input {...props} className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
+    </div>
+  );
+}
+
+function AdminSelect({ label, children, ...props }: { label: string } & React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <div>
+      <label className="text-foreground font-bold text-xs mb-1 block">{label}</label>
+      <select {...props} className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground font-semibold touch-target">{children}</select>
+    </div>
+  );
+}
+
+// Sub-component for loading formulation items on demand
+function FormulationItemsList({ formulationId, products, getCategoryName, onDelete }: {
+  formulationId: string;
+  products: { id: string; name: string; category_id: string | null }[];
+  getCategoryName: (id: string | null) => string;
+  onDelete: (id: string, formulationId: string) => void;
+}) {
+  const [items, setItems] = useState<{ id: string; product_id: string; quantity_per_batch: number; unit: string }[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.from('formulation_items').select('*').eq('formulation_id', formulationId);
+    if (data) setItems(data as any);
+    setLoaded(true);
+  }, [formulationId]);
+
+  if (!loaded) {
+    return (
+      <div className="px-4 py-2">
+        <button onClick={load} className="text-primary text-xs font-bold hover:underline">
+          Carregar itens...
+        </button>
+      </div>
+    );
+  }
+
+  if (items.length === 0) return <div className="px-4 py-2 text-muted-foreground text-xs">Nenhum item</div>;
+
+  return (
+    <div className="divide-y divide-border">
+      {items.map(item => {
+        const product = products.find(p => p.id === item.product_id);
+        return (
+          <div key={item.id} className="px-4 py-2 flex items-center justify-between">
+            <div>
+              <p className="text-foreground text-sm font-semibold">{product?.name || item.product_id}</p>
+              <p className="text-muted-foreground text-xs">{item.quantity_per_batch} {item.unit}/batida</p>
+            </div>
+            <button onClick={() => onDelete(item.id, formulationId)}
+              className="p-1 bg-destructive/80 hover:bg-destructive text-destructive-foreground rounded transition-colors">
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 interface UserItem { id: string; username: string; full_name: string; role: AppRole; created_at: string; }
 interface CategoryItem { id: string; name: string; }
 interface ProductItem {
@@ -54,7 +136,7 @@ export default function AdminPanel() {
     name: '', final_product: '', machine: '', weight_per_batch: '',
   });
   const [formulationDetails, setFormulationDetails] = useState<FormulationDetail[]>([]);
-  const [showDetailForm, setShowDetailForm] = useState<string | null>(null); // formulation id
+  const [showDetailForm, setShowDetailForm] = useState<string | null>(null);
   const [detailFormData, setDetailFormData] = useState({ product_id: '', quantity_per_batch: '' });
 
   // Locations
@@ -241,33 +323,6 @@ export default function AdminPanel() {
     operador: 'bg-industrial-success/20 text-industrial-success border-industrial-success/50',
   }[r]);
 
-  // ── Modal helper ──
-  const Modal = ({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) => (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-card border-2 border-primary rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="bg-secondary px-6 py-5 border-b-2 border-border flex justify-between items-center sticky top-0">
-          <h2 className="text-xl font-bold text-foreground">{title}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-accent rounded-lg touch-target"><X className="w-6 h-6 text-foreground" /></button>
-        </div>
-        <div className="p-6 space-y-4">{children}</div>
-      </div>
-    </div>
-  );
-
-  const Input = ({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) => (
-    <div>
-      <label className="text-foreground font-bold text-xs mb-1 block">{label}</label>
-      <input {...props} className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target" />
-    </div>
-  );
-
-  const Select = ({ label, children, ...props }: { label: string } & React.SelectHTMLAttributes<HTMLSelectElement>) => (
-    <div>
-      <label className="text-foreground font-bold text-xs mb-1 block">{label}</label>
-      <select {...props} className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground font-semibold touch-target">{children}</select>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
@@ -309,14 +364,14 @@ export default function AdminPanel() {
             </div>
 
             {showUserForm && (
-              <Modal title={editingUserId ? '✏️ Editar Usuário' : '➕ Novo Usuário'} onClose={() => { setShowUserForm(false); setEditingUserId(null); }}>
-                <Input label="Nome Completo" value={userFormData.name} onChange={e => setUserFormData({ ...userFormData, name: e.target.value })} />
-                <Input label="Username" value={userFormData.username} onChange={e => setUserFormData({ ...userFormData, username: e.target.value })} />
-                <Input label="E-mail" type="email" value={userFormData.email} onChange={e => setUserFormData({ ...userFormData, email: e.target.value })} />
-                <Input label="Senha" type="password" value={userFormData.password} onChange={e => setUserFormData({ ...userFormData, password: e.target.value })} />
+              <AdminModal title={editingUserId ? '✏️ Editar Usuário' : '➕ Novo Usuário'} onClose={() => { setShowUserForm(false); setEditingUserId(null); }}>
+                <AdminInput label="Nome Completo" value={userFormData.name} onChange={e => setUserFormData(prev => ({ ...prev, name: e.target.value }))} />
+                <AdminInput label="Username" value={userFormData.username} onChange={e => setUserFormData(prev => ({ ...prev, username: e.target.value }))} />
+                <AdminInput label="E-mail" type="email" value={userFormData.email} onChange={e => setUserFormData(prev => ({ ...prev, email: e.target.value }))} />
+                <AdminInput label="Senha" type="password" value={userFormData.password} onChange={e => setUserFormData(prev => ({ ...prev, password: e.target.value }))} />
                 <div className="grid grid-cols-3 gap-2">
                   {(['operador', 'gerente', 'admin'] as AppRole[]).map(role => (
-                    <button key={role} onClick={() => setUserFormData({ ...userFormData, role })}
+                    <button key={role} onClick={() => setUserFormData(prev => ({ ...prev, role }))}
                       className={`px-3 py-3 rounded-lg font-bold transition-all border-2 text-sm touch-target ${
                         userFormData.role === role ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-secondary-foreground border-border hover:bg-secondary'
                       }`}>{getRoleLabel(role)?.split(' ')[1]}</button>
@@ -328,7 +383,7 @@ export default function AdminPanel() {
                     {userLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : editingUserId ? 'Atualizar' : 'Criar'}
                   </IndustrialButton>
                 </div>
-              </Modal>
+              </AdminModal>
             )}
 
             <div className="space-y-3">
@@ -362,41 +417,41 @@ export default function AdminPanel() {
             </div>
 
             {showCategoryForm && (
-              <Modal title={editingCategoryId ? '✏️ Editar Categoria' : '➕ Nova Categoria'} onClose={() => { setShowCategoryForm(false); setEditingCategoryId(null); setCategoryFormData(''); }}>
-                <Input label="Nome" value={categoryFormData} onChange={e => setCategoryFormData(e.target.value)} />
+              <AdminModal title={editingCategoryId ? '✏️ Editar Categoria' : '➕ Nova Categoria'} onClose={() => { setShowCategoryForm(false); setEditingCategoryId(null); setCategoryFormData(''); }}>
+                <AdminInput label="Nome" value={categoryFormData} onChange={e => setCategoryFormData(e.target.value)} />
                 <div className="flex gap-3 pt-4">
                   <IndustrialButton size="lg" variant="secondary" onClick={() => setShowCategoryForm(false)} className="flex-1">Cancelar</IndustrialButton>
                   <IndustrialButton size="lg" variant="success" onClick={handleSaveCategory} className="flex-1">{editingCategoryId ? 'Atualizar' : 'Criar'}</IndustrialButton>
                 </div>
-              </Modal>
+              </AdminModal>
             )}
 
             {showProductForm && (
-              <Modal title={editingProductId ? '✏️ Editar Produto' : '➕ Novo Produto'} onClose={() => { setShowProductForm(false); setEditingProductId(null); }}>
-                <Input label="Nome" value={productFormData.name} onChange={e => setProductFormData({ ...productFormData, name: e.target.value })} />
-                <Select label="Categoria" value={productFormData.category_id} onChange={e => setProductFormData({ ...productFormData, category_id: e.target.value })}>
+              <AdminModal title={editingProductId ? '✏️ Editar Produto' : '➕ Novo Produto'} onClose={() => { setShowProductForm(false); setEditingProductId(null); }}>
+                <AdminInput label="Nome" value={productFormData.name} onChange={e => setProductFormData(prev => ({ ...prev, name: e.target.value }))} />
+                <AdminSelect label="Categoria" value={productFormData.category_id} onChange={e => setProductFormData(prev => ({ ...prev, category_id: e.target.value }))}>
                   <option value="">Selecione...</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </Select>
-                <Input label="Peso unitário (kg)" type="number" value={productFormData.unit_weight_kg} onChange={e => setProductFormData({ ...productFormData, unit_weight_kg: e.target.value })} />
-                <Select label="Unidade base" value={productFormData.base_unit} onChange={e => setProductFormData({ ...productFormData, base_unit: e.target.value })}>
+                </AdminSelect>
+                <AdminInput label="Peso unitário (kg)" type="text" inputMode="decimal" value={productFormData.unit_weight_kg} onChange={e => setProductFormData(prev => ({ ...prev, unit_weight_kg: e.target.value }))} />
+                <AdminSelect label="Unidade base" value={productFormData.base_unit} onChange={e => setProductFormData(prev => ({ ...prev, base_unit: e.target.value }))}>
                   <option value="kg">kg</option>
                   <option value="un">Unidade</option>
-                </Select>
-                <Input label="Fator de conversão" type="number" value={productFormData.conversion_factor} onChange={e => setProductFormData({ ...productFormData, conversion_factor: e.target.value })} />
-                <Select label="Tipo embalagem" value={productFormData.package_type} onChange={e => setProductFormData({ ...productFormData, package_type: e.target.value })}>
+                </AdminSelect>
+                <AdminInput label="Fator de conversão" type="text" inputMode="decimal" value={productFormData.conversion_factor} onChange={e => setProductFormData(prev => ({ ...prev, conversion_factor: e.target.value }))} />
+                <AdminSelect label="Tipo embalagem" value={productFormData.package_type} onChange={e => setProductFormData(prev => ({ ...prev, package_type: e.target.value }))}>
                   <option value="bulk">Granel (bulk)</option>
                   <option value="unit">Unidade</option>
                   <option value="sealed_bag">Saco fechado</option>
-                </Select>
+                </AdminSelect>
                 {productFormData.package_type === 'sealed_bag' && (
-                  <Input label="Peso do saco (kg)" type="number" value={productFormData.package_weight} onChange={e => setProductFormData({ ...productFormData, package_weight: e.target.value })} />
+                  <AdminInput label="Peso do saco (kg)" type="text" inputMode="decimal" value={productFormData.package_weight} onChange={e => setProductFormData(prev => ({ ...prev, package_weight: e.target.value }))} />
                 )}
                 <div className="flex gap-3 pt-4">
                   <IndustrialButton size="lg" variant="secondary" onClick={() => setShowProductForm(false)} className="flex-1">Cancelar</IndustrialButton>
                   <IndustrialButton size="lg" variant="success" onClick={handleSaveProduct} className="flex-1">{editingProductId ? 'Atualizar' : 'Criar'}</IndustrialButton>
                 </div>
-              </Modal>
+              </AdminModal>
             )}
 
             <div className="space-y-4">
@@ -447,14 +502,14 @@ export default function AdminPanel() {
             </div>
 
             {showFormulationForm && (
-              <Modal title={editingFormulationId ? '✏️ Editar Formulação' : '➕ Nova Formulação'} onClose={() => { setShowFormulationForm(false); setEditingFormulationId(null); }}>
-                <Input label="Nome" value={formulationFormData.name} onChange={e => setFormulationFormData({ ...formulationFormData, name: e.target.value })} />
+              <AdminModal title={editingFormulationId ? '✏️ Editar Formulação' : '➕ Nova Formulação'} onClose={() => { setShowFormulationForm(false); setEditingFormulationId(null); }}>
+                <AdminInput label="Nome" value={formulationFormData.name} onChange={e => setFormulationFormData(prev => ({ ...prev, name: e.target.value }))} />
                 <div>
                   <label className="text-foreground font-bold text-xs mb-1 block">Produto Final</label>
                   <input
                     list="final-products-list"
                     value={formulationFormData.final_product}
-                    onChange={e => setFormulationFormData({ ...formulationFormData, final_product: e.target.value })}
+                    onChange={e => setFormulationFormData(prev => ({ ...prev, final_product: e.target.value }))}
                     placeholder="Ex: Telha, Forro"
                     className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target"
                   />
@@ -469,7 +524,7 @@ export default function AdminPanel() {
                   <input
                     list="machines-list"
                     value={formulationFormData.machine}
-                    onChange={e => setFormulationFormData({ ...formulationFormData, machine: e.target.value })}
+                    onChange={e => setFormulationFormData(prev => ({ ...prev, machine: e.target.value }))}
                     placeholder="Ex: Misturador 2"
                     className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target"
                   />
@@ -479,27 +534,26 @@ export default function AdminPanel() {
                     ))}
                   </datalist>
                 </div>
-                <Input label="Peso por batida (kg)" type="number" value={formulationFormData.weight_per_batch} onChange={e => setFormulationFormData({ ...formulationFormData, weight_per_batch: e.target.value })} />
+                <AdminInput label="Peso por batida (kg)" type="text" inputMode="decimal" value={formulationFormData.weight_per_batch} onChange={e => setFormulationFormData(prev => ({ ...prev, weight_per_batch: e.target.value }))} />
                 <div className="flex gap-3 pt-4">
                   <IndustrialButton size="lg" variant="secondary" onClick={() => setShowFormulationForm(false)} className="flex-1">Cancelar</IndustrialButton>
                   <IndustrialButton size="lg" variant="success" onClick={handleSaveFormulation} className="flex-1">{editingFormulationId ? 'Atualizar' : 'Criar'}</IndustrialButton>
                 </div>
-              </Modal>
+              </AdminModal>
             )}
 
-            {/* Detail form for adding items to a formulation */}
             {showDetailForm && (
-              <Modal title="➕ Adicionar Item à Formulação" onClose={() => { setShowDetailForm(null); setDetailFormData({ product_id: '', quantity_per_batch: '' }); }}>
-                <Select label="Matéria-Prima" value={detailFormData.product_id} onChange={e => setDetailFormData({ ...detailFormData, product_id: e.target.value })}>
+              <AdminModal title="➕ Adicionar Item à Formulação" onClose={() => { setShowDetailForm(null); setDetailFormData({ product_id: '', quantity_per_batch: '' }); }}>
+                <AdminSelect label="Matéria-Prima" value={detailFormData.product_id} onChange={e => setDetailFormData(prev => ({ ...prev, product_id: e.target.value }))}>
                   <option value="">Selecione...</option>
                   {products.map(p => <option key={p.id} value={p.id}>{p.name} ({getCategoryName(p.category_id)})</option>)}
-                </Select>
-                <Input label="Quantidade por batida (kg)" type="number" value={detailFormData.quantity_per_batch} onChange={e => setDetailFormData({ ...detailFormData, quantity_per_batch: e.target.value })} />
+                </AdminSelect>
+                <AdminInput label="Quantidade por batida (kg)" type="text" inputMode="decimal" value={detailFormData.quantity_per_batch} onChange={e => setDetailFormData(prev => ({ ...prev, quantity_per_batch: e.target.value }))} />
                 <div className="flex gap-3 pt-4">
                   <IndustrialButton size="lg" variant="secondary" onClick={() => setShowDetailForm(null)} className="flex-1">Cancelar</IndustrialButton>
                   <IndustrialButton size="lg" variant="success" onClick={handleAddFormulationItem} className="flex-1">Adicionar</IndustrialButton>
                 </div>
-              </Modal>
+              </AdminModal>
             )}
 
             <div className="space-y-4">
@@ -519,7 +573,6 @@ export default function AdminPanel() {
                         className="p-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors touch-target"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
-                  {/* Show items inline when expanded */}
                   <FormulationItemsList formulationId={f.id} products={products} getCategoryName={getCategoryName} onDelete={handleDeleteFormulationItem} />
                 </div>
               ))}
@@ -560,55 +613,6 @@ export default function AdminPanel() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// Sub-component for loading formulation items on demand
-function FormulationItemsList({ formulationId, products, getCategoryName, onDelete }: {
-  formulationId: string;
-  products: { id: string; name: string; category_id: string | null }[];
-  getCategoryName: (id: string | null) => string;
-  onDelete: (id: string, formulationId: string) => void;
-}) {
-  const [items, setItems] = useState<{ id: string; product_id: string; quantity_per_batch: number; unit: string }[]>([]);
-  const [loaded, setLoaded] = useState(false);
-
-  const load = useCallback(async () => {
-    const { data } = await supabase.from('formulation_items').select('*').eq('formulation_id', formulationId);
-    if (data) setItems(data as any);
-    setLoaded(true);
-  }, [formulationId]);
-
-  if (!loaded) {
-    return (
-      <div className="px-4 py-2">
-        <button onClick={load} className="text-primary text-xs font-bold hover:underline">
-          Carregar itens...
-        </button>
-      </div>
-    );
-  }
-
-  if (items.length === 0) return <div className="px-4 py-2 text-muted-foreground text-xs">Nenhum item</div>;
-
-  return (
-    <div className="divide-y divide-border">
-      {items.map(item => {
-        const product = products.find(p => p.id === item.product_id);
-        return (
-          <div key={item.id} className="px-4 py-2 flex items-center justify-between">
-            <div>
-              <p className="text-foreground text-sm font-semibold">{product?.name || item.product_id}</p>
-              <p className="text-muted-foreground text-xs">{item.quantity_per_batch} {item.unit}/batida</p>
-            </div>
-            <button onClick={() => onDelete(item.id, formulationId)}
-              className="p-1 bg-destructive/80 hover:bg-destructive text-destructive-foreground rounded transition-colors">
-              <Trash2 className="w-3 h-3" />
-            </button>
-          </div>
-        );
-      })}
     </div>
   );
 }

@@ -32,6 +32,7 @@ export interface CalculatedItem {
   package_type: string;
   package_weight: number;
   sacks_required: number | null;
+  rounding_loss_kg: number;
   pcp_available_kg: number;
   has_enough_stock: boolean;
 }
@@ -42,6 +43,7 @@ export interface ProductionSummary {
   total_compound_kg: number;
   items: CalculatedItem[];
   all_stock_sufficient: boolean;
+  total_rounding_loss_kg: number;
 }
 
 /**
@@ -91,6 +93,7 @@ export function calculateProduction(
     const pkgWeight = product?.package_weight || 0;
     const { adjusted, sacks } = adjustForPackaging(idealKg, pkgType, pkgWeight);
     const differenceKg = adjusted - idealKg;
+    const roundingLoss = pkgType === 'sealed_bag' && pkgWeight > 0 ? adjusted - idealKg : 0;
     const pcpAvailable = pcpStockMap.get(fi.product_id) || 0;
 
     return {
@@ -103,10 +106,13 @@ export function calculateProduction(
       package_type: pkgType,
       package_weight: pkgWeight,
       sacks_required: sacks,
+      rounding_loss_kg: roundingLoss,
       pcp_available_kg: pcpAvailable,
       has_enough_stock: pcpAvailable >= adjusted,
     };
   });
+
+  const totalRoundingLoss = items.reduce((sum, i) => sum + i.rounding_loss_kg, 0);
 
   return {
     formulation,
@@ -114,5 +120,6 @@ export function calculateProduction(
     total_compound_kg: totalCompound,
     items,
     all_stock_sufficient: items.every(i => i.has_enough_stock),
+    total_rounding_loss_kg: totalRoundingLoss,
   };
 }

@@ -244,6 +244,11 @@ export default function ProductionOrderPage() {
                 <div className="text-right">
                   <p className="text-foreground text-2xl font-black">{summary.total_compound_kg.toFixed(1)}</p>
                   <p className="text-muted-foreground text-xs">kg composto</p>
+                  {summary.total_rounding_loss_kg > 0 && (
+                    <p className="text-industrial-warning text-xs font-bold mt-1">
+                      Perda arredondamento: +{summary.total_rounding_loss_kg.toFixed(2)}kg
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -296,12 +301,18 @@ export default function ProductionOrderPage() {
                       </div>
 
                       {item.package_type === 'sealed_bag' && item.sacks_required !== null && (
-                        <div className="mt-2 flex items-center gap-2">
-                          <Package className="w-3 h-3 text-industrial-warning" />
-                          <p className="text-industrial-warning text-xs font-semibold">
-                            {item.sacks_required} sacos × {item.package_weight}kg = {item.adjusted_quantity_kg.toFixed(2)}kg
-                            {item.difference_kg > 0 && ` (+${item.difference_kg.toFixed(2)}kg excedente)`}
-                          </p>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Package className="w-3 h-3 text-industrial-warning" />
+                            <p className="text-industrial-warning text-xs font-semibold">
+                              {item.sacks_required} sacos × {item.package_weight}kg = {item.adjusted_quantity_kg.toFixed(2)}kg
+                            </p>
+                          </div>
+                          {item.rounding_loss_kg > 0 && (
+                            <p className="text-muted-foreground text-xs ml-5">
+                              Perda por arredondamento: <span className="text-industrial-warning font-bold">+{item.rounding_loss_kg.toFixed(2)}kg</span>
+                            </p>
+                          )}
                         </div>
                       )}
 
