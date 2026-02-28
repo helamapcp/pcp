@@ -205,6 +205,8 @@ export default function ManagerDashboardV2() {
     { id: 'audit' as const, label: 'Auditoria', icon: ScrollText },
   ];
 
+  const handleOpenExecutive = () => setLocation('/dashboard/executive');
+
   const movementTypeLabel = (t: string) => {
     const map: Record<string, string> = {
       entry: 'Entrada', transfer_out: 'Saída', transfer_in: 'Recebimento',
@@ -232,6 +234,11 @@ export default function ManagerDashboardV2() {
           </div>
           <button onClick={handleLogout} className="p-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors touch-target" title="Sair">
             <LogOut className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="px-4 pb-2">
+          <button onClick={handleOpenExecutive} className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold">
+            📊 Dashboard Executivo
           </button>
         </div>
       </div>
