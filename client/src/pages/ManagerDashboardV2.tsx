@@ -1,12 +1,173 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIndustrialProducts, useStock, useStockMovements, useTransfers } from '@/hooks/useIndustrialData';
 import { useProductionOrders, useProductionBatches } from '@/hooks/useProductionData';
 import { useStockAdjustments } from '@/hooks/useInventoryCounting';
-import { LogOut, BarChart3, ArrowLeftRight, ScrollText, Package, Factory, Layers, Scale } from 'lucide-react';
+import { LogOut, BarChart3, ArrowLeftRight, ScrollText, Package, Factory, Layers, Scale, TrendingUp, AlertTriangle } from 'lucide-react';
 
 const LOCATIONS = ['CD', 'PCP', 'PMP', 'FABRICA'] as const;
+
+// ── Dashboard KPIs Component ──
+function DashboardKPIs({ products, stock, getStock, getLocationTotalKg, movements, transfers, batches, adjustments, productionOrders }: any) {
+  const today = new Date().toDateString();
+  const todayMovements = movements.filter((m: any) => new Date(m.created_at).toDateString() === today);
+
+  // KPI: Divergência média de inventário
+  const avgDivergence = useMemo(() => {
+    if (adjustments.length === 0) return 0;
+    const invAdj = adjustments.filter((a: any) => a.reference_type === 'inventory_count');
+    if (invAdj.length === 0) return 0;
+    const totalDiff = invAdj.reduce((s: number, a: any) => s + Math.abs(Number(a.difference_kg)), 0);
+    return totalDiff / invAdj.length;
+  }, [adjustments]);
+
+  // KPI: Consumo por máquina
+  const consumptionByMachine = useMemo(() => {
+    const map: Record<string, number> = {};
+    productionOrders.forEach((po: any) => {
+      if (po.status === 'confirmed') {
+        map[po.machine] = (map[po.machine] || 0) + Number(po.total_compound_kg);
+      }
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [productionOrders]);
+
+  // KPI: Admin adjustments
+  const adminAdjustments = useMemo(() => {
+    return adjustments.filter((a: any) => a.reference_type === 'admin_adjustment');
+  }, [adjustments]);
+
+  return (
+    <div className="space-y-6">
+      {/* Stock by location */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {LOCATIONS.map(loc => {
+          const totalKg = getLocationTotalKg(loc);
+          return (
+            <div key={loc} className="bg-card border-2 border-border rounded-lg p-4 md:p-6">
+              <p className="text-muted-foreground text-xs font-bold mb-2">{loc}</p>
+              <p className="text-foreground text-2xl md:text-3xl font-black">{(totalKg / 1000).toFixed(1)}t</p>
+              <p className="text-muted-foreground text-xs mt-1">{totalKg.toLocaleString()} kg</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Summary KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'PRODUTOS', value: products.length, icon: '📦' },
+          { label: 'MOVIMENTAÇÕES HOJE', value: todayMovements.length, icon: '📊' },
+          { label: 'LOTES PRODUZIDOS', value: batches.filter((b: any) => b.status === 'completed').length, icon: '🏭' },
+          { label: 'TRANSFERÊNCIAS', value: transfers.filter((t: any) => t.status === 'completed').length, icon: '🔄' },
+        ].map(stat => (
+          <div key={stat.label} className="bg-card border-2 border-border rounded-lg p-4 md:p-6">
+            <p className="text-muted-foreground text-xs font-bold mb-2">{stat.icon} {stat.label}</p>
+            <p className="text-foreground text-2xl md:text-3xl font-black">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Industrial KPIs row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Inventory divergence */}
+        <div className="bg-card border-2 border-border rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            <p className="text-foreground font-bold text-sm">Divergência Média Inventário</p>
+          </div>
+          <p className={`text-2xl font-black ${avgDivergence > 10 ? 'text-destructive' : avgDivergence > 1 ? 'text-industrial-warning' : 'text-industrial-success'}`}>
+            {avgDivergence.toFixed(2)} kg
+          </p>
+          <p className="text-muted-foreground text-xs mt-1">
+            {adjustments.filter((a: any) => a.reference_type === 'inventory_count').length} contagens realizadas
+          </p>
+        </div>
+
+        {/* Consumption by machine */}
+        <div className="bg-card border-2 border-border rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Factory className="w-4 h-4 text-primary" />
+            <p className="text-foreground font-bold text-sm">Consumo por Misturador</p>
+          </div>
+          {consumptionByMachine.length === 0 ? (
+            <p className="text-muted-foreground text-sm">Sem dados</p>
+          ) : (
+            <div className="space-y-2">
+              {consumptionByMachine.slice(0, 4).map(([machine, kg]) => (
+                <div key={machine} className="flex justify-between items-center">
+                  <span className="text-foreground text-sm font-semibold">{machine}</span>
+                  <span className="text-primary font-black text-sm">{(kg / 1000).toFixed(1)}t</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Admin adjustments */}
+        <div className="bg-card border-2 border-border rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-industrial-warning" />
+            <p className="text-foreground font-bold text-sm">Ajustes Administrativos</p>
+          </div>
+          <p className={`text-2xl font-black ${adminAdjustments.length > 10 ? 'text-destructive' : 'text-foreground'}`}>
+            {adminAdjustments.length}
+          </p>
+          <p className="text-muted-foreground text-xs mt-1">
+            {adminAdjustments.length > 0
+              ? `Última: ${new Date(adminAdjustments[0]?.created_at).toLocaleDateString('pt-BR')}`
+              : 'Nenhum ajuste manual'}
+          </p>
+        </div>
+      </div>
+
+      {/* Stock by location table */}
+      <div className="bg-card border-2 border-border rounded-lg overflow-hidden">
+        <div className="px-4 py-3 bg-secondary border-b-2 border-border">
+          <h3 className="text-foreground font-bold text-lg">Estoque por Local</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-secondary border-b-2 border-border">
+              <tr>
+                <th className="px-4 py-3 text-left text-foreground font-bold">Produto</th>
+                {LOCATIONS.map(loc => (
+                  <th key={loc} className="px-4 py-3 text-right text-foreground font-bold">{loc}</th>
+                ))}
+                <th className="px-4 py-3 text-right font-bold text-industrial-success">Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {products.map((product: any) => {
+                const total = LOCATIONS.reduce((sum, loc) => {
+                  const s = getStock(product.id, loc);
+                  return sum + Number(s?.total_kg || 0);
+                }, 0);
+                if (total === 0) return null;
+                return (
+                  <tr key={product.id} className="hover:bg-secondary/50 transition-colors">
+                    <td className="px-4 py-3 text-foreground font-semibold text-sm">{product.name}</td>
+                    {LOCATIONS.map((loc: string) => {
+                      const s = getStock(product.id, loc);
+                      return (
+                        <td key={loc} className="px-4 py-3 text-right text-foreground font-bold">
+                          {s ? `${Number(s.total_kg).toFixed(1)} kg` : '-'}
+                        </td>
+                      );
+                    })}
+                    <td className="px-4 py-3 text-right text-industrial-success font-black">{total.toFixed(1)} kg</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 export default function ManagerDashboardV2() {
   const [, setLocation] = useLocation();
@@ -31,8 +192,8 @@ export default function ManagerDashboardV2() {
     return null;
   }
 
-  const today = new Date().toDateString();
-  const todayMovements = movements.filter(m => new Date(m.created_at).toDateString() === today);
+
+
 
   const tabs = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: BarChart3 },
@@ -92,76 +253,17 @@ export default function ManagerDashboardV2() {
 
       <div className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
         {activeTab === 'dashboard' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {LOCATIONS.map(loc => {
-                const totalKg = getLocationTotalKg(loc);
-                return (
-                  <div key={loc} className="bg-card border-2 border-border rounded-lg p-4 md:p-6">
-                    <p className="text-muted-foreground text-xs font-bold mb-2">{loc}</p>
-                    <p className="text-foreground text-2xl md:text-3xl font-black">{(totalKg / 1000).toFixed(1)}t</p>
-                    <p className="text-muted-foreground text-xs mt-1">{totalKg.toLocaleString()} kg</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { label: 'PRODUTOS', value: products.length },
-                { label: 'MOVIMENTAÇÕES HOJE', value: todayMovements.length },
-                { label: 'LOTES PRODUZIDOS', value: batches.filter(b => b.status === 'completed').length },
-                { label: 'TRANSFERÊNCIAS CONCLUÍDAS', value: transfers.filter(t => t.status === 'completed').length },
-              ].map(stat => (
-                <div key={stat.label} className="bg-card border-2 border-border rounded-lg p-4 md:p-6">
-                  <p className="text-muted-foreground text-xs font-bold mb-2">{stat.label}</p>
-                  <p className="text-foreground text-2xl md:text-3xl font-black">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-card border-2 border-border rounded-lg overflow-hidden">
-              <div className="px-4 py-3 bg-secondary border-b-2 border-border">
-                <h3 className="text-foreground font-bold text-lg">Estoque por Local</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-secondary border-b-2 border-border">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-foreground font-bold">Produto</th>
-                      {LOCATIONS.map(loc => (
-                        <th key={loc} className="px-4 py-3 text-right text-foreground font-bold">{loc}</th>
-                      ))}
-                      <th className="px-4 py-3 text-right font-bold text-industrial-success">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {products.map(product => {
-                      const total = LOCATIONS.reduce((sum, loc) => {
-                        const s = getStock(product.id, loc);
-                        return sum + Number(s?.total_kg || 0);
-                      }, 0);
-                      if (total === 0) return null;
-                      return (
-                        <tr key={product.id} className="hover:bg-secondary/50 transition-colors">
-                          <td className="px-4 py-3 text-foreground font-semibold text-sm">{product.name}</td>
-                          {LOCATIONS.map(loc => {
-                            const s = getStock(product.id, loc);
-                            return (
-                              <td key={loc} className="px-4 py-3 text-right text-foreground font-bold">
-                                {s ? `${Number(s.total_kg).toFixed(1)} kg` : '-'}
-                              </td>
-                            );
-                          })}
-                          <td className="px-4 py-3 text-right text-industrial-success font-black">{total.toFixed(1)} kg</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <DashboardKPIs
+            products={products}
+            stock={stock}
+            getStock={getStock}
+            getLocationTotalKg={getLocationTotalKg}
+            movements={movements}
+            transfers={transfers}
+            batches={batches}
+            adjustments={adjustments}
+            productionOrders={productionOrders}
+          />
         )}
 
         {activeTab === 'movements' && (

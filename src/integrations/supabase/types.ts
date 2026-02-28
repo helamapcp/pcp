@@ -1014,6 +1014,15 @@ export type Database = {
         }
         Returns: Json
       }
+      confirm_transfer: {
+        Args: {
+          p_confirmed_items?: Json
+          p_transfer_id: string
+          p_user_id?: string
+          p_user_name?: string
+        }
+        Returns: Json
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1024,6 +1033,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      stock_entry: {
+        Args: {
+          p_location_code: string
+          p_notes?: string
+          p_product_id: string
+          p_quantity: number
+          p_unit: string
+          p_user_id: string
+          p_user_name: string
+        }
+        Returns: Json
       }
     }
     Enums: {

@@ -4,31 +4,27 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   useIndustrialProducts,
   useStock,
-  useStockMovements,
   useTransfers,
   convertToKg,
-  type Product,
   type TransferItem,
 } from '@/hooks/useIndustrialData';
+import { createTransferRequest, confirmTransferRPC, getTransferItems as fetchTransferItems } from '@/services/transferService';
 import { IndustrialButton } from '@/components/IndustrialButton';
 import { LogOut, ArrowLeft, Plus, Trash2, Check, ArrowRight, Package } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TransferItemDraft {
   product_id: string;
-  requested_quantity: number;
+  requested_quantity: string; // raw string for controlled input
   requested_unit: string;
-  sent_quantity: number;
-  sent_unit: string;
 }
 
 export default function TransferCDtoPCP() {
   const [, setLocation] = useLocation();
   const { user, signOut } = useAuth();
   const { products } = useIndustrialProducts();
-  const { stock, getStock, upsertStock } = useStock();
-  const { addMovement } = useStockMovements();
-  const { transfers, createTransfer, confirmTransfer, getTransferItems } = useTransfers();
+  const { getStock, refetch: refetchStock } = useStock();
+  const { transfers, refetch: refetchTransfers } = useTransfers();
 
   const [mode, setMode] = useState<'list' | 'create' | 'confirm'>('list');
   const [items, setItems] = useState<TransferItemDraft[]>([]);
@@ -60,28 +56,21 @@ export default function TransferCDtoPCP() {
       toast.error('Produto já adicionado');
       return;
     }
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-
     setItems([...items, {
       product_id: productId,
-      requested_quantity: 0,
+      requested_quantity: '',
       requested_unit: 'kg',
-      sent_quantity: 0,
-      sent_unit: 'kg',
     }]);
     setShowProductPicker(false);
     setSearchTerm('');
   };
 
-  const updateItem = (index: number, field: string, value: any) => {
-    const newItems = [...items];
-    (newItems[index] as any)[field] = value;
-    // Auto-fill sent = requested
-    if (field === 'requested_quantity') {
-      newItems[index].sent_quantity = value;
-    }
-    setItems(newItems);
+  const updateItem = (index: number, field: string, value: string) => {
+    setItems(prev => {
+      const newItems = [...prev];
+      (newItems[index] as any)[field] = value;
+      return newItems;
+    });
   };
 
   const removeItem = (index: number) => {
@@ -89,18 +78,19 @@ export default function TransferCDtoPCP() {
   };
 
   const handleCreateTransfer = async () => {
-    const validItems = items.filter(i => i.requested_quantity > 0);
+    const validItems = items.filter(i => parseFloat(i.requested_quantity) > 0);
     if (validItems.length === 0) {
       toast.error('Adicione pelo menos um item com quantidade');
       return;
     }
 
-    // Validate stock
+    // Frontend validation (preview only — real validation is server-side)
     for (const item of validItems) {
       const product = products.find(p => p.id === item.product_id);
       if (!product) continue;
+      const qty = parseFloat(item.requested_quantity) || 0;
+      const sentKg = convertToKg(qty, item.requested_unit, product);
       const cdStock = getStock(item.product_id, 'CD');
-      const sentKg = convertToKg(item.sent_quantity, item.sent_unit, product);
       const availableKg = Number(cdStock?.total_kg || 0);
 
       if (sentKg > availableKg) {
@@ -111,19 +101,13 @@ export default function TransferCDtoPCP() {
 
     setSubmitting(true);
     try {
-      const transferItems = validItems.map(item => {
-        const product = products.find(p => p.id === item.product_id)!;
-        return {
-          product_id: item.product_id,
-          requested_quantity: item.requested_quantity,
-          requested_unit: item.requested_unit,
-          sent_quantity: item.sent_quantity,
-          sent_unit: item.sent_unit,
-          sent_total_kg: convertToKg(item.sent_quantity, item.sent_unit, product),
-        };
-      });
+      const transferItems = validItems.map(item => ({
+        product_id: item.product_id,
+        requested_quantity: parseFloat(item.requested_quantity) || 0,
+        requested_unit: item.requested_unit,
+      }));
 
-      const { error } = await createTransfer('CD', 'PCP', transferItems, user.id, user.fullName);
+      const { error } = await createTransferRequest('CD', 'PCP', transferItems, user.id, user.fullName);
 
       if (error) {
         toast.error('Erro ao criar transferência');
@@ -131,6 +115,7 @@ export default function TransferCDtoPCP() {
         toast.success('✓ Transferência criada com sucesso!', { duration: 4000 });
         setItems([]);
         setMode('list');
+        await refetchTransfers();
       }
     } catch (err) {
       toast.error('Erro inesperado');
@@ -139,11 +124,11 @@ export default function TransferCDtoPCP() {
   };
 
   const loadTransferItems = async (transferId: string) => {
-    const { data } = await getTransferItems(transferId);
+    const { data } = await fetchTransferItems(transferId);
     if (data) {
-      setConfirmItems(data);
+      setConfirmItems(data as TransferItem[]);
       const quantities: Record<string, string> = {};
-      data.forEach(item => {
+      data.forEach((item: any) => {
         quantities[item.id] = String(item.sent_quantity);
       });
       setSentQuantities(quantities);
@@ -154,47 +139,34 @@ export default function TransferCDtoPCP() {
 
   const handleConfirmTransfer = async () => {
     if (!selectedTransfer) return;
-    const transfer = transfers.find(t => t.id === selectedTransfer);
-    if (!transfer) return;
 
     setSubmitting(true);
     try {
-      const confirmed = confirmItems.map(item => {
-        const product = products.find(p => p.id === item.product_id);
-        const sentQty = parseFloat(sentQuantities[item.id] || '0');
-        const sentKg = product ? convertToKg(sentQty, item.sent_unit, product) : 0;
-        const requestedKg = product ? convertToKg(item.requested_quantity, item.requested_unit, product) : 0;
+      // Build confirmed items — server does conversion
+      const confirmed = confirmItems.map(item => ({
+        id: item.id,
+        sent_quantity: parseFloat(sentQuantities[item.id] || '0'),
+        sent_unit: item.sent_unit || 'kg',
+      }));
 
-        let status = 'exact';
-        if (sentKg < requestedKg * 0.99) status = 'below';
-        else if (sentKg > requestedKg * 1.01) status = 'above';
-
-        return {
-          id: item.id,
-          sent_quantity: sentQty,
-          sent_unit: item.sent_unit,
-          sent_total_kg: sentKg,
-          status,
-        };
-      });
-
-      await confirmTransfer(
+      const { error } = await confirmTransferRPC(
         selectedTransfer,
         confirmed,
         user.id,
-        user.fullName,
-        { upsertStock, getStock, addMovement },
-        transfer,
-        products
+        user.fullName
       );
+
+      if (error) throw error;
 
       toast.success('✓ Transferência confirmada! Estoque atualizado.', { duration: 4000 });
       setMode('list');
       setSelectedTransfer(null);
       setConfirmItems([]);
       setSentQuantities({});
-    } catch (err) {
-      toast.error('Erro ao confirmar transferência');
+      await refetchStock();
+      await refetchTransfers();
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || err));
     }
     setSubmitting(false);
   };
@@ -237,6 +209,12 @@ export default function TransferCDtoPCP() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="bg-card border-2 border-primary/30 rounded-lg p-3">
+            <p className="text-muted-foreground text-xs">
+              ⚙️ A conversão de unidades é feita no servidor. Informe a quantidade enviada na unidade desejada.
+            </p>
+          </div>
+
           {confirmItems.map(item => {
             const product = products.find(p => p.id === item.product_id);
             const cdStock = getStock(item.product_id, 'CD');
@@ -245,8 +223,8 @@ export default function TransferCDtoPCP() {
             const requestedKg = product ? convertToKg(item.requested_quantity, item.requested_unit, product) : 0;
 
             let statusColor = 'border-border';
-            if (sentKg > 0) {
-              if (Math.abs(sentKg - requestedKg) / requestedKg < 0.01) statusColor = 'border-industrial-success';
+            if (sentQty > 0) {
+              if (Math.abs(sentKg - requestedKg) / Math.max(requestedKg, 0.001) < 0.01) statusColor = 'border-industrial-success';
               else if (sentKg < requestedKg) statusColor = 'border-industrial-warning';
               else statusColor = 'border-primary';
             }
@@ -257,6 +235,9 @@ export default function TransferCDtoPCP() {
                   <div>
                     <p className="text-foreground font-bold">{product?.name || 'Produto'}</p>
                     <p className="text-muted-foreground text-xs">{product?.category}</p>
+                    {product?.package_type === 'sealed_bag' && (
+                      <p className="text-primary text-xs font-bold mt-1">Saco {product.package_weight}kg</p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="text-muted-foreground text-xs">CD disponível</p>
@@ -267,13 +248,13 @@ export default function TransferCDtoPCP() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-secondary rounded-lg p-3">
                     <p className="text-muted-foreground text-xs font-bold">SOLICITADO</p>
-                    <p className="text-foreground text-lg font-black">{item.requested_quantity} {item.requested_unit}</p>
+                    <p className="text-foreground text-lg font-black">{item.requested_quantity} {item.requested_unit === 'units' ? 'und' : 'kg'}</p>
                     <p className="text-muted-foreground text-xs">{requestedKg.toFixed(1)} kg</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs font-bold mb-1">ENVIADO</p>
                     <input
-                      type="number"
+                      type="text"
                       inputMode="decimal"
                       value={sentQuantities[item.id] || ''}
                       onChange={(e) => setSentQuantities({ ...sentQuantities, [item.id]: e.target.value })}
@@ -291,7 +272,7 @@ export default function TransferCDtoPCP() {
                       </span>
                     </p>
                     {getStatusBadge(
-                      Math.abs(sentKg - requestedKg) / requestedKg < 0.01 ? 'exact' :
+                      Math.abs(sentKg - requestedKg) / Math.max(requestedKg, 0.001) < 0.01 ? 'exact' :
                       sentKg < requestedKg ? 'below' : 'above'
                     )}
                   </div>
@@ -335,7 +316,8 @@ export default function TransferCDtoPCP() {
           {items.map((item, idx) => {
             const product = products.find(p => p.id === item.product_id);
             const cdStock = getStock(item.product_id, 'CD');
-            const sentKg = product ? convertToKg(item.sent_quantity, item.sent_unit, product) : 0;
+            const qty = parseFloat(item.requested_quantity) || 0;
+            const sentKg = product ? convertToKg(qty, item.requested_unit, product) : 0;
 
             return (
               <div key={idx} className="bg-card border-2 border-border rounded-xl p-4 space-y-3">
@@ -345,6 +327,9 @@ export default function TransferCDtoPCP() {
                     <p className="text-muted-foreground text-xs">
                       CD: {Number(cdStock?.total_kg || 0).toFixed(1)} kg disponível
                     </p>
+                    {product?.package_type === 'sealed_bag' && (
+                      <p className="text-primary text-xs font-bold">Saco {product.package_weight}kg</p>
+                    )}
                   </div>
                   <button onClick={() => removeItem(idx)} className="p-2 hover:bg-destructive/20 rounded-lg touch-target">
                     <Trash2 className="w-5 h-5 text-destructive" />
@@ -370,19 +355,20 @@ export default function TransferCDtoPCP() {
                     <input
                       type="text"
                       inputMode="decimal"
-                      value={item.requested_quantity || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        updateItem(idx, 'requested_quantity', val === '' ? 0 : parseFloat(val) || 0);
-                      }}
+                      value={item.requested_quantity}
+                      onChange={(e) => updateItem(idx, 'requested_quantity', e.target.value)}
+                      placeholder="0"
                       className="w-full px-3 py-2 bg-input border-2 border-border rounded-lg text-foreground font-bold text-center touch-target mt-1"
                     />
                   </div>
                 </div>
 
-                {item.requested_quantity > 0 && (
+                {qty > 0 && (
                   <p className="text-muted-foreground text-xs text-center">
                     Total: {sentKg.toFixed(1)} kg
+                    {product?.package_type === 'sealed_bag' && item.requested_unit === 'units' && (
+                      <span className="text-primary"> ({qty} × {product.package_weight}kg)</span>
+                    )}
                   </p>
                 )}
               </div>
@@ -409,7 +395,12 @@ export default function TransferCDtoPCP() {
                       className={`w-full text-left px-3 py-3 rounded-lg flex justify-between items-center touch-target ${
                         already ? 'opacity-40' : 'hover:bg-secondary'
                       }`}>
-                      <span className="text-foreground font-semibold text-sm">{p.name}</span>
+                      <div>
+                        <span className="text-foreground font-semibold text-sm">{p.name}</span>
+                        {p.package_type === 'sealed_bag' && (
+                          <span className="text-primary text-xs ml-2">Saco {p.package_weight}kg</span>
+                        )}
+                      </div>
                       <span className="text-muted-foreground text-xs">{Number(cdStock?.total_kg || 0).toFixed(1)} kg</span>
                     </button>
                   );
@@ -431,13 +422,14 @@ export default function TransferCDtoPCP() {
               <div className="bg-card border-2 border-industrial-success rounded-xl p-4 mb-4">
                 <p className="text-muted-foreground text-xs font-bold mb-2">RESUMO DA TRANSFERÊNCIA</p>
                 <div className="space-y-1">
-                  {items.filter(i => i.requested_quantity > 0).map((item, idx) => {
+                  {items.filter(i => parseFloat(i.requested_quantity) > 0).map((item, idx) => {
                     const product = products.find(p => p.id === item.product_id);
-                    const kg = product ? convertToKg(item.sent_quantity, item.sent_unit, product) : 0;
+                    const qty = parseFloat(item.requested_quantity) || 0;
+                    const kg = product ? convertToKg(qty, item.requested_unit, product) : 0;
                     return (
                       <div key={idx} className="flex justify-between text-sm">
                         <span className="text-foreground">{product?.name}</span>
-                        <span className="text-foreground font-bold">{item.sent_quantity} {item.sent_unit === 'units' ? 'und' : 'kg'} ({kg.toFixed(1)} kg)</span>
+                        <span className="text-foreground font-bold">{qty} {item.requested_unit === 'units' ? 'und' : 'kg'} ({kg.toFixed(1)} kg)</span>
                       </div>
                     );
                   })}
@@ -445,7 +437,7 @@ export default function TransferCDtoPCP() {
               </div>
 
               <IndustrialButton size="lg" variant="success" fullWidth onClick={handleCreateTransfer}
-                disabled={submitting || items.every(i => i.requested_quantity <= 0)}
+                disabled={submitting || items.every(i => !parseFloat(i.requested_quantity))}
                 icon={<ArrowRight className="w-5 h-5" />}>
                 {submitting ? 'Criando...' : 'Criar Transferência CD → PCP'}
               </IndustrialButton>
