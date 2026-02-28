@@ -265,6 +265,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          location_type: string
           name: string
           sort_order: number
         }
@@ -274,6 +275,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          location_type?: string
           name: string
           sort_order?: number
         }
@@ -283,8 +285,36 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          location_type?: string
           name?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      mixers: {
+        Row: {
+          active: boolean
+          capacity_kg: number
+          created_at: string | null
+          id: string
+          name: string
+          production_line: string | null
+        }
+        Insert: {
+          active?: boolean
+          capacity_kg?: number
+          created_at?: string | null
+          id?: string
+          name: string
+          production_line?: string | null
+        }
+        Update: {
+          active?: boolean
+          capacity_kg?: number
+          created_at?: string | null
+          id?: string
+          name?: string
+          production_line?: string | null
         }
         Relationships: []
       }

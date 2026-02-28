@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { IndustrialButton } from '@/components/IndustrialButton';
+import { useMixers } from '@/hooks/useMixers';
 import { X, Plus, Trash2, Edit2, LogOut, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -141,6 +142,9 @@ export default function AdminPanel() {
 
   // Locations
   const [locations, setLocations] = useState<LocationItem[]>([]);
+
+  // Mixers
+  const { mixers } = useMixers();
 
   const handleLogout = async () => { await signOut(); setLocation('/login'); };
 
@@ -352,6 +356,13 @@ export default function AdminPanel() {
         ))}
       </div>
 
+      {/* Quick links */}
+      <div className="flex gap-2 px-4 pt-4 overflow-x-auto max-w-7xl mx-auto w-full">
+        <button onClick={() => setLocation('/admin/locations')} className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold whitespace-nowrap">📍 Gestão Locais</button>
+        <button onClick={() => setLocation('/admin/mixers')} className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold whitespace-nowrap">⚙️ Misturadores</button>
+        <button onClick={() => setLocation('/dashboard/executive')} className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold whitespace-nowrap">📊 Dashboard Executivo</button>
+      </div>
+
       <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
 
         {/* ═══ USERS ═══ */}
@@ -520,19 +531,21 @@ export default function AdminPanel() {
                   </datalist>
                 </div>
                 <div>
-                  <label className="text-foreground font-bold text-xs mb-1 block">Máquina</label>
-                  <input
-                    list="machines-list"
+                  <label className="text-foreground font-bold text-xs mb-1 block">Máquina (Misturador)</label>
+                  <select
                     value={formulationFormData.machine}
                     onChange={e => setFormulationFormData(prev => ({ ...prev, machine: e.target.value }))}
-                    placeholder="Ex: Misturador 2"
-                    className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground placeholder-muted-foreground font-semibold touch-target"
-                  />
-                  <datalist id="machines-list">
-                    {[...new Set(formulations.map(f => f.machine))].map(m => (
-                      <option key={m} value={m} />
+                    className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground font-semibold touch-target"
+                  >
+                    <option value="">Selecione...</option>
+                    {mixers.filter(m => m.active).map(m => (
+                      <option key={m.id} value={m.name}>{m.name} ({m.capacity_kg}kg)</option>
                     ))}
-                  </datalist>
+                    {/* Also show existing formulation machines not in mixers */}
+                    {[...new Set(formulations.map(f => f.machine))].filter(fm => !mixers.some(m => m.name === fm)).map(m => (
+                      <option key={m} value={m}>{m} (legado)</option>
+                    ))}
+                  </select>
                 </div>
                 <AdminInput label="Peso por batida (kg)" type="text" inputMode="decimal" value={formulationFormData.weight_per_batch} onChange={e => setFormulationFormData(prev => ({ ...prev, weight_per_batch: e.target.value }))} />
                 <div className="flex gap-3 pt-4">
@@ -583,20 +596,30 @@ export default function AdminPanel() {
 
         {/* ═══ LOCATIONS ═══ */}
         {activeTab === 'locations' && (
-          <div className="space-y-3">
-            {locations.map(loc => (
-              <div key={loc.id} className="bg-card border-2 border-border rounded-lg p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-foreground font-bold">{loc.name}</p>
-                  <p className="text-muted-foreground text-xs">Código: {loc.code} • Ordem: {loc.sort_order}</p>
-                  {loc.description && <p className="text-muted-foreground text-xs">{loc.description}</p>}
+          <div className="space-y-4">
+            <div className="bg-card border-2 border-border rounded-lg p-4">
+              <p className="text-muted-foreground text-sm mb-4">
+                Gerencie locais do sistema com controle total na página dedicada.
+              </p>
+              <IndustrialButton size="lg" variant="primary" onClick={() => setLocation('/admin/locations')} icon={<Edit2 className="w-5 h-5" />}>
+                Abrir Gestão de Locais
+              </IndustrialButton>
+            </div>
+            <div className="space-y-3">
+              {locations.map(loc => (
+                <div key={loc.id} className={`bg-card border-2 rounded-lg p-4 flex items-center justify-between ${loc.active ? 'border-border' : 'border-destructive/30 opacity-60'}`}>
+                  <div>
+                    <p className="text-foreground font-bold">{loc.name}</p>
+                    <p className="text-muted-foreground text-xs">Código: {loc.code} • Ordem: {loc.sort_order}</p>
+                    {loc.description && <p className="text-muted-foreground text-xs">{loc.description}</p>}
+                  </div>
+                  <span className={`px-2 py-1 rounded text-xs font-bold ${loc.active ? 'bg-industrial-success/20 text-industrial-success' : 'bg-destructive/20 text-destructive'}`}>
+                    {loc.active ? 'Ativo' : 'Inativo'}
+                  </span>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs font-bold ${loc.active ? 'bg-industrial-success/20 text-industrial-success' : 'bg-destructive/20 text-destructive'}`}>
-                  {loc.active ? 'Ativo' : 'Inativo'}
-                </span>
-              </div>
-            ))}
-            {locations.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhum local cadastrado</p>}
+              ))}
+              {locations.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhum local cadastrado</p>}
+            </div>
           </div>
         )}
 

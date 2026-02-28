@@ -3,7 +3,8 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIndustrialProducts, useStock } from '@/hooks/useIndustrialData';
 import { useFormulations, useFormulationItems, useProductionOrders } from '@/hooks/useProductionData';
-import { calculateProduction, type ProductionSummary, type CalculatedItem } from '@/lib/productionEngine';
+import { useMixers } from '@/hooks/useMixers';
+import { calculateProduction, type ProductionSummary, type CalculatedItem } from '@/engine/productionEngine';
 import { toast } from 'sonner';
 import { ArrowLeft, Factory, Beaker, Settings2, Hash, CheckCircle2, AlertTriangle, Loader2, Package } from 'lucide-react';
 
@@ -15,6 +16,7 @@ export default function ProductionOrderPage() {
   const { products } = useIndustrialProducts();
   const { stock, refetch: refetchStock } = useStock();
   const { formulations } = useFormulations();
+  const { mixers } = useMixers();
   const { confirmProduction } = useProductionOrders();
 
   const [step, setStep] = useState<Step>('configure');
@@ -31,8 +33,11 @@ export default function ProductionOrderPage() {
   const finalProducts = useMemo(() => [...new Set(formulations.map(f => f.final_product))], [formulations]);
   const machines = useMemo(() => {
     if (!selectedProduct) return [];
-    return [...new Set(formulations.filter(f => f.final_product === selectedProduct).map(f => f.machine))];
-  }, [formulations, selectedProduct]);
+    // Combine formulation machines + registered mixers
+    const formulationMachines = formulations.filter(f => f.final_product === selectedProduct).map(f => f.machine);
+    const mixerNames = mixers.filter(m => m.active).map(m => m.name);
+    return [...new Set([...formulationMachines, ...mixerNames])];
+  }, [formulations, selectedProduct, mixers]);
 
   const matchedFormulation = useMemo(() =>
     formulations.find(f => f.final_product === selectedProduct && f.machine === selectedMachine),

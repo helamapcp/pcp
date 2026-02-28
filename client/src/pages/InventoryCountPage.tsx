@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIndustrialProducts, useStock } from '@/hooks/useIndustrialData';
+import { useIndustrialProducts, useStock, useLocations } from '@/hooks/useIndustrialData';
 import { useInventoryCounts, type InventoryCountItem } from '@/hooks/useInventoryCounting';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,13 +21,14 @@ interface CountRow {
   justification: string;
 }
 
-const COUNTABLE_LOCATIONS = ['CD', 'PCP', 'PMP', 'FABRICA'];
+// Locations loaded dynamically
 
 export default function InventoryCountPage() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { products } = useIndustrialProducts();
   const { stock, refetch: refetchStock } = useStock();
+  const { locations } = useLocations();
   const { counts, createCount, confirmCount, refetch: refetchCounts } = useInventoryCounts();
 
   const [step, setStep] = useState<Step>('select');
@@ -190,8 +191,8 @@ export default function InventoryCountPage() {
                 <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)}
                   className="w-full bg-input border-2 border-border rounded-lg p-3 text-foreground font-semibold touch-target">
                   <option value="">Selecione...</option>
-                  {COUNTABLE_LOCATIONS.map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
+                  {locations.map(loc => (
+                    <option key={loc.code} value={loc.code}>{loc.name} ({loc.code})</option>
                   ))}
                 </select>
               </div>
