@@ -17,7 +17,7 @@ export interface Formulation {
   id: string;
   name: string;
   final_product: string;
-  machine: string;
+  machine: string | null;
   weight_per_batch: number;
   active: boolean;
 }

@@ -19,7 +19,7 @@ export interface CalculatedItem {
 }
 
 export interface ProductionSummary {
-  formulation: { id: string; name: string; final_product: string; machine: string; weight_per_batch: number; active: boolean };
+  formulation: { id: string; name: string; final_product: string; machine: string | null; weight_per_batch: number; active: boolean };
   batches: number;
   total_compound_kg: number;
   items: CalculatedItem[];

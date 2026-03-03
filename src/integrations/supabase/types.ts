@@ -80,7 +80,7 @@ export type Database = {
           created_at: string | null
           final_product: string
           id: string
-          machine: string
+          machine: string | null
           name: string
           updated_at: string | null
           weight_per_batch: number
@@ -90,7 +90,7 @@ export type Database = {
           created_at?: string | null
           final_product: string
           id?: string
-          machine: string
+          machine?: string | null
           name: string
           updated_at?: string | null
           weight_per_batch?: number
@@ -100,7 +100,7 @@ export type Database = {
           created_at?: string | null
           final_product?: string
           id?: string
-          machine?: string
+          machine?: string | null
           name?: string
           updated_at?: string | null
           weight_per_batch?: number
@@ -451,7 +451,7 @@ export type Database = {
           final_product: string
           formulation_id: string
           id: string
-          machine: string
+          machine: string | null
           notes: string | null
           status: string
           total_compound_kg: number
@@ -466,7 +466,7 @@ export type Database = {
           final_product: string
           formulation_id: string
           id?: string
-          machine: string
+          machine?: string | null
           notes?: string | null
           status?: string
           total_compound_kg?: number
@@ -481,7 +481,7 @@ export type Database = {
           final_product?: string
           formulation_id?: string
           id?: string
-          machine?: string
+          machine?: string | null
           notes?: string | null
           status?: string
           total_compound_kg?: number
