@@ -42,6 +42,17 @@ export const NAVIGATION: Record<AppRole, NavGroup[]> = {
       title: 'Gestão',
       items: [
         { label: 'Dashboard', path: '/manager', icon: BarChart3, description: 'KPIs e visão analítica' },
+        { label: 'Movimentações', path: '/manager/movimentacoes', icon: Package, description: 'Histórico de movimentações' },
+        { label: 'Transferências', path: '/manager/transferencias', icon: ArrowRightLeft, description: 'Transferências entre locais' },
+        { label: 'Produção', path: '/manager/producao', icon: Factory, description: 'Ordens de produção' },
+        { label: 'Lotes', path: '/manager/lotes', icon: Layers, description: 'Lotes produzidos' },
+        { label: 'Ajustes', path: '/manager/ajustes', icon: Scale, description: 'Ajustes de estoque' },
+        { label: 'Auditoria', path: '/manager/auditoria', icon: ScrollText, description: 'Trilha de auditoria' },
+      ],
+    },
+    {
+      title: 'Relatórios',
+      items: [
         { label: 'Dashboard Executivo', path: '/dashboard/executive', icon: LayoutDashboard, description: 'Gráficos industriais' },
       ],
     },
