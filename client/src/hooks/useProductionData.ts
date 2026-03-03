@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Formulation, FormulationItem } from '@/lib/productionEngine';
+import type { Formulation, FormulationItem } from '@/engine/productionEngine';
 
 export interface ProductionOrder {
   id: string;
@@ -107,7 +107,7 @@ export function useProductionOrders() {
   const confirmProduction = useCallback(async (params: {
     formulation_id: string;
     final_product: string;
-    machine: string;
+    machine: string | null;
     batches: number;
     weight_per_batch: number;
     total_compound_kg: number;
@@ -126,7 +126,7 @@ export function useProductionOrders() {
     const { data, error } = await supabase.rpc('confirm_production', {
       p_formulation_id: params.formulation_id,
       p_final_product: params.final_product,
-      p_machine: params.machine,
+      p_machine: params.machine || null,
       p_batches: params.batches,
       p_weight_per_batch: params.weight_per_batch,
       p_total_compound_kg: params.total_compound_kg,
