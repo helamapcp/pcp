@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIndustrialProducts, useStock, convertToKg } from '@/hooks/useIndustrialData';
 import { stockEntryRPC } from '@/services/stockService';
 import { IndustrialButton } from '@/components/IndustrialButton';
-import { LogOut, Package, Plus, Check, ArrowLeft } from 'lucide-react';
+import { Package, Plus, Check, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CDStockEntry() {
-  const [, setLocation] = useLocation();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { products } = useIndustrialProducts();
   const { getStock, refetch: refetchStock } = useStock();
 
@@ -20,21 +18,11 @@ export default function CDStockEntry() {
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const handleLogout = async () => {
-    await signOut();
-    setLocation('/login');
-  };
-
-  if (!user) {
-    setLocation('/login');
-    return null;
-  }
+  if (!user) return null;
 
   const product = products.find(p => p.id === selectedProduct);
   const currentStock = product ? getStock(product.id, 'CD') : undefined;
   const parsedQty = parseFloat(quantity) || 0;
-
-  // Preview conversion (display only — real conversion is server-side)
   const totalKg = product ? convertToKg(parsedQty, unit, product) : 0;
   const newStockKg = (Number(currentStock?.total_kg) || 0) + totalKg;
 
@@ -50,17 +38,10 @@ export default function CDStockEntry() {
     setSubmitting(true);
 
     try {
-      // Use server-side RPC for entry — conversion happens in DB
       const { data, error } = await stockEntryRPC(
-        product.id,
-        'CD',
-        parsedQty,
-        unit,
-        user.id,
-        user.fullName,
+        product.id, 'CD', parsedQty, unit, user.id, user.fullName,
         `Entrada no CD: ${parsedQty} ${unit === 'units' ? 'unidades' : 'kg'}`
       );
-
       if (error) throw error;
 
       const resultKg = (data as any)?.total_kg || totalKg;
@@ -71,7 +52,6 @@ export default function CDStockEntry() {
         { duration: 4000 }
       );
 
-      // Reset
       setSelectedProduct(null);
       setQuantity('');
       setUnit('kg');
@@ -79,18 +59,17 @@ export default function CDStockEntry() {
     } catch (err: any) {
       toast.error('Erro ao registrar entrada: ' + (err.message || err));
     }
-
     setSubmitting(false);
   };
 
   // ── Confirmation screen ──
   if (showConfirm && product) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
+      <div className="flex flex-col h-full">
+        <div className="bg-card border-b-2 border-border p-4">
           <div className="flex items-center gap-3">
             <button onClick={() => setShowConfirm(false)} className="p-2 hover:bg-secondary rounded-lg touch-target">
-              <ArrowLeft className="w-6 h-6 text-foreground" />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <h1 className="text-xl font-black text-foreground">Confirmar Entrada</h1>
           </div>
@@ -136,11 +115,11 @@ export default function CDStockEntry() {
   // ── Product quantity input ──
   if (selectedProduct && product) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
+      <div className="flex flex-col h-full">
+        <div className="bg-card border-b-2 border-border p-4">
           <div className="flex items-center gap-3">
             <button onClick={() => { setSelectedProduct(null); setQuantity(''); }} className="p-2 hover:bg-secondary rounded-lg touch-target">
-              <ArrowLeft className="w-6 h-6 text-foreground" />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div>
               <h1 className="text-xl font-black text-foreground">Entrada no CD</h1>
@@ -234,23 +213,8 @@ export default function CDStockEntry() {
 
   // ── Product selection ──
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setLocation('/operator')} className="p-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors touch-target">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-black text-foreground">📥 Entrada CD</h1>
-            <p className="text-muted-foreground text-sm">{user.fullName} • Registro de Entrada</p>
-          </div>
-          <button onClick={handleLogout} className="p-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors touch-target" title="Sair">
-            <LogOut className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex flex-col h-full">
+      <div className="p-4 space-y-4">
         <div className="bg-card border-2 border-border rounded-lg p-4">
           <p className="text-muted-foreground text-sm">
             💡 <span className="font-semibold text-foreground">Entrada Simplificada:</span> Selecione o produto e informe a quantidade recebida. Conversão de unidades é feita no servidor.

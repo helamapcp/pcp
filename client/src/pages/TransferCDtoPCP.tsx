@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useIndustrialProducts,
@@ -10,18 +9,17 @@ import {
 } from '@/hooks/useIndustrialData';
 import { createTransferRequest, confirmTransferRPC, getTransferItems as fetchTransferItems } from '@/services/transferService';
 import { IndustrialButton } from '@/components/IndustrialButton';
-import { LogOut, ArrowLeft, Plus, Trash2, Check, ArrowRight, Package } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Check, ArrowRight, Package } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TransferItemDraft {
   product_id: string;
-  requested_quantity: string; // raw string for controlled input
+  requested_quantity: string;
   requested_unit: string;
 }
 
 export default function TransferCDtoPCP() {
-  const [, setLocation] = useLocation();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { products } = useIndustrialProducts();
   const { getStock, refetch: refetchStock } = useStock();
   const { transfers, refetch: refetchTransfers } = useTransfers();
@@ -32,20 +30,11 @@ export default function TransferCDtoPCP() {
   const [searchTerm, setSearchTerm] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // For confirming existing transfers
   const [selectedTransfer, setSelectedTransfer] = useState<string | null>(null);
   const [confirmItems, setConfirmItems] = useState<TransferItem[]>([]);
   const [sentQuantities, setSentQuantities] = useState<Record<string, string>>({});
 
-  const handleLogout = async () => {
-    await signOut();
-    setLocation('/login');
-  };
-
-  if (!user) {
-    setLocation('/login');
-    return null;
-  }
+  if (!user) return null;
 
   const pendingTransfers = transfers.filter(
     t => t.from_location === 'CD' && t.to_location === 'PCP' && t.status === 'pending'
@@ -56,11 +45,7 @@ export default function TransferCDtoPCP() {
       toast.error('Produto já adicionado');
       return;
     }
-    setItems([...items, {
-      product_id: productId,
-      requested_quantity: '',
-      requested_unit: 'kg',
-    }]);
+    setItems([...items, { product_id: productId, requested_quantity: '', requested_unit: 'kg' }]);
     setShowProductPicker(false);
     setSearchTerm('');
   };
@@ -84,7 +69,6 @@ export default function TransferCDtoPCP() {
       return;
     }
 
-    // Frontend validation (preview only — real validation is server-side)
     for (const item of validItems) {
       const product = products.find(p => p.id === item.product_id);
       if (!product) continue;
@@ -128,9 +112,7 @@ export default function TransferCDtoPCP() {
     if (data) {
       setConfirmItems(data as TransferItem[]);
       const quantities: Record<string, string> = {};
-      data.forEach((item: any) => {
-        quantities[item.id] = String(item.sent_quantity);
-      });
+      data.forEach((item: any) => { quantities[item.id] = String(item.sent_quantity); });
       setSentQuantities(quantities);
       setSelectedTransfer(transferId);
       setMode('confirm');
@@ -139,23 +121,15 @@ export default function TransferCDtoPCP() {
 
   const handleConfirmTransfer = async () => {
     if (!selectedTransfer) return;
-
     setSubmitting(true);
     try {
-      // Build confirmed items — server does conversion
       const confirmed = confirmItems.map(item => ({
         id: item.id,
         sent_quantity: parseFloat(sentQuantities[item.id] || '0'),
         sent_unit: item.sent_unit || 'kg',
       }));
 
-      const { error } = await confirmTransferRPC(
-        selectedTransfer,
-        confirmed,
-        user.id,
-        user.fullName
-      );
-
+      const { error } = await confirmTransferRPC(selectedTransfer, confirmed, user.id, user.fullName);
       if (error) throw error;
 
       toast.success('✓ Transferência confirmada! Estoque atualizado.', { duration: 4000 });
@@ -179,10 +153,7 @@ export default function TransferCDtoPCP() {
       pending: 'bg-secondary text-secondary-foreground',
     };
     const labels: Record<string, string> = {
-      exact: 'Exato',
-      below: 'Abaixo',
-      above: 'Acima',
-      pending: 'Pendente',
+      exact: 'Exato', below: 'Abaixo', above: 'Acima', pending: 'Pendente',
     };
     return (
       <span className={`px-2 py-1 rounded text-xs font-bold ${styles[status] || styles.pending}`}>
@@ -195,11 +166,11 @@ export default function TransferCDtoPCP() {
   if (mode === 'confirm' && selectedTransfer) {
     const transfer = transfers.find(t => t.id === selectedTransfer);
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
+      <div className="flex flex-col h-full">
+        <div className="bg-card border-b-2 border-border p-4">
           <div className="flex items-center gap-3">
             <button onClick={() => { setMode('list'); setSelectedTransfer(null); }} className="p-2 hover:bg-secondary rounded-lg touch-target">
-              <ArrowLeft className="w-6 h-6 text-foreground" />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div>
               <h1 className="text-xl font-black text-foreground">Confirmar Transferência</h1>
@@ -298,11 +269,11 @@ export default function TransferCDtoPCP() {
     );
 
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
+      <div className="flex flex-col h-full">
+        <div className="bg-card border-b-2 border-border p-4">
           <div className="flex items-center gap-3">
             <button onClick={() => { setMode('list'); setItems([]); }} className="p-2 hover:bg-secondary rounded-lg touch-target">
-              <ArrowLeft className="w-6 h-6 text-foreground" />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div>
               <h1 className="text-xl font-black text-foreground">Nova Transferência</h1>
@@ -312,7 +283,6 @@ export default function TransferCDtoPCP() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Added items */}
           {items.map((item, idx) => {
             const product = products.find(p => p.id === item.product_id);
             const cdStock = getStock(item.product_id, 'CD');
@@ -375,7 +345,6 @@ export default function TransferCDtoPCP() {
             );
           })}
 
-          {/* Add product button / picker */}
           {showProductPicker ? (
             <div className="bg-card border-2 border-primary rounded-xl p-4 space-y-3">
               <input
@@ -418,7 +387,6 @@ export default function TransferCDtoPCP() {
 
           {items.length > 0 && (
             <div className="pt-4">
-              {/* Summary */}
               <div className="bg-card border-2 border-industrial-success rounded-xl p-4 mb-4">
                 <p className="text-muted-foreground text-xs font-bold mb-2">RESUMO DA TRANSFERÊNCIA</p>
                 <div className="space-y-1">
@@ -437,7 +405,7 @@ export default function TransferCDtoPCP() {
               </div>
 
               <IndustrialButton size="lg" variant="success" fullWidth onClick={handleCreateTransfer}
-                disabled={submitting || items.every(i => !parseFloat(i.requested_quantity))}
+                disabled={submitting || items.every(i => !parseFloat(i.requested_quantity)) }
                 icon={<ArrowRight className="w-5 h-5" />}>
                 {submitting ? 'Criando...' : 'Criar Transferência CD → PCP'}
               </IndustrialButton>
@@ -450,23 +418,8 @@ export default function TransferCDtoPCP() {
 
   // ── Transfer list ──
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setLocation('/operator')} className="p-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors touch-target">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-black text-foreground">🔄 Transferências</h1>
-            <p className="text-muted-foreground text-sm">{user.fullName} • CD → PCP</p>
-          </div>
-          <button onClick={handleLogout} className="p-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg transition-colors touch-target" title="Sair">
-            <LogOut className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex flex-col h-full">
+      <div className="p-4 space-y-4">
         <IndustrialButton size="lg" variant="success" fullWidth onClick={() => setMode('create')} icon={<Plus className="w-5 h-5" />}>
           Nova Transferência CD → PCP
         </IndustrialButton>
@@ -491,7 +444,6 @@ export default function TransferCDtoPCP() {
           </div>
         )}
 
-        {/* Completed transfers */}
         <div className="space-y-3">
           <h2 className="text-foreground font-bold text-lg">Histórico</h2>
           {transfers.filter(t => t.from_location === 'CD' && t.to_location === 'PCP' && t.status === 'completed').slice(0, 20).map(t => (
