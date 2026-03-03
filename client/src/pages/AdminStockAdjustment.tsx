@@ -69,19 +69,12 @@ export default function AdminStockAdjustment() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="bg-card border-b-2 border-border sticky top-0 z-10 p-4">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setLocation('/admin')} className="p-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors touch-target">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <div>
-            <h1 className="text-xl font-black text-foreground flex items-center gap-2">
-              <Scale className="w-5 h-5 text-destructive" /> Ajuste Manual de Estoque
-            </h1>
-            <p className="text-muted-foreground text-xs">Admin • Correção direta com auditoria</p>
-          </div>
-        </div>
+    <div className="flex flex-col flex-1">
+      <div className="p-4 border-b border-border">
+        <h1 className="text-xl font-black text-foreground flex items-center gap-2">
+          <Scale className="w-5 h-5 text-destructive" /> Ajuste Manual de Estoque
+        </h1>
+        <p className="text-muted-foreground text-xs">Correção direta com auditoria</p>
       </div>
 
       <div className="flex-1 p-4 max-w-2xl mx-auto w-full">
