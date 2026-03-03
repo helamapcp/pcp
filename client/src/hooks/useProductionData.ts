@@ -6,7 +6,7 @@ export interface ProductionOrder {
   id: string;
   formulation_id: string;
   final_product: string;
-  machine: string;
+  machine: string | null;
   batches: number;
   weight_per_batch: number;
   total_compound_kg: number;

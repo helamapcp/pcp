@@ -97,7 +97,7 @@ interface ProductItem {
   id: string; name: string; category_id: string | null; unit_weight_kg: number;
   base_unit: string; conversion_factor: number; package_type: string; package_weight: number;
 }
-interface FormulationItem { id: string; name: string; final_product: string; machine: string; weight_per_batch: number; active: boolean; }
+interface FormulationItem { id: string; name: string; final_product: string; machine: string | null; weight_per_batch: number; active: boolean; }
 interface FormulationDetail { id: string; formulation_id: string; product_id: string; quantity_per_batch: number; unit: string; }
 interface LocationItem { id: string; code: string; name: string; description: string | null; sort_order: number; active: boolean; }
 
@@ -269,13 +269,13 @@ export default function AdminPanel() {
 
   // ── FORMULATION HANDLERS ──
   const handleSaveFormulation = async () => {
-    if (!formulationFormData.name || !formulationFormData.final_product || !formulationFormData.machine) {
-      toast.error('Preencha todos os campos'); return;
+    if (!formulationFormData.name || !formulationFormData.final_product) {
+      toast.error('Preencha nome e produto final'); return;
     }
     const payload = {
       name: formulationFormData.name,
       final_product: formulationFormData.final_product,
-      machine: formulationFormData.machine,
+      machine: formulationFormData.machine || null,
       weight_per_batch: parseFloat(formulationFormData.weight_per_batch) || 0,
     };
     if (editingFormulationId) {
@@ -292,7 +292,7 @@ export default function AdminPanel() {
   const handleEditFormulation = (f: FormulationItem) => {
     setFormulationFormData({
       name: f.name, final_product: f.final_product,
-      machine: f.machine, weight_per_batch: String(f.weight_per_batch),
+      machine: f.machine || '', weight_per_batch: String(f.weight_per_batch),
     });
     setEditingFormulationId(f.id); setShowFormulationForm(true);
   };
@@ -531,19 +531,19 @@ export default function AdminPanel() {
                   </datalist>
                 </div>
                 <div>
-                  <label className="text-foreground font-bold text-xs mb-1 block">Máquina (Misturador)</label>
+                  <label className="text-foreground font-bold text-xs mb-1 block">Máquina (opcional)</label>
                   <select
                     value={formulationFormData.machine}
                     onChange={e => setFormulationFormData(prev => ({ ...prev, machine: e.target.value }))}
                     className="w-full px-4 py-3 bg-input border-2 border-border rounded-lg text-foreground font-semibold touch-target"
                   >
-                    <option value="">Selecione...</option>
+                    <option value="">Sem misturador</option>
                     {mixers.filter(m => m.active).map(m => (
                       <option key={m.id} value={m.name}>{m.name} ({m.capacity_kg}kg)</option>
                     ))}
                     {/* Also show existing formulation machines not in mixers */}
-                    {[...new Set(formulations.map(f => f.machine))].filter(fm => !mixers.some(m => m.name === fm)).map(m => (
-                      <option key={m} value={m}>{m} (legado)</option>
+                    {[...new Set(formulations.map(f => f.machine).filter(Boolean))].filter(fm => !mixers.some(m => m.name === fm)).map(m => (
+                      <option key={m} value={m!}>{m} (legado)</option>
                     ))}
                   </select>
                 </div>
@@ -575,7 +575,7 @@ export default function AdminPanel() {
                   <div className="flex justify-between items-center p-4 bg-secondary">
                     <div>
                       <h3 className="text-foreground font-bold">{f.name}</h3>
-                      <p className="text-muted-foreground text-xs">{f.final_product} • {f.machine} • {f.weight_per_batch}kg/batida</p>
+                      <p className="text-muted-foreground text-xs">{f.final_product} • {f.machine || 'Sem misturador'} • {f.weight_per_batch}kg/batida</p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => { fetchFormulationDetails(f.id); setShowDetailForm(f.id); }}

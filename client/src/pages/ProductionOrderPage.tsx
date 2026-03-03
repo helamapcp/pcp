@@ -33,16 +33,25 @@ export default function ProductionOrderPage() {
   const finalProducts = useMemo(() => [...new Set(formulations.map(f => f.final_product))], [formulations]);
   const machines = useMemo(() => {
     if (!selectedProduct) return [];
-    // Combine formulation machines + registered mixers
-    const formulationMachines = formulations.filter(f => f.final_product === selectedProduct).map(f => f.machine);
+    // Combine formulation machines (non-null) + registered mixers
+    const formulationMachines = formulations
+      .filter(f => f.final_product === selectedProduct && f.machine)
+      .map(f => f.machine!);
     const mixerNames = mixers.filter(m => m.active).map(m => m.name);
     return [...new Set([...formulationMachines, ...mixerNames])];
   }, [formulations, selectedProduct, mixers]);
 
-  const matchedFormulation = useMemo(() =>
-    formulations.find(f => f.final_product === selectedProduct && f.machine === selectedMachine),
-    [formulations, selectedProduct, selectedMachine]
-  );
+  // Match formulation: prefer exact match, fallback to formulation without machine
+  const matchedFormulation = useMemo(() => {
+    if (!selectedProduct) return undefined;
+    // Exact match with machine
+    if (selectedMachine) {
+      const exact = formulations.find(f => f.final_product === selectedProduct && f.machine === selectedMachine);
+      if (exact) return exact;
+    }
+    // Fallback: formulation with null/empty machine for this product
+    return formulations.find(f => f.final_product === selectedProduct && (!f.machine || f.machine === ''));
+  }, [formulations, selectedProduct, selectedMachine]);
 
   const { items: formulationItems } = useFormulationItems(matchedFormulation?.id || null);
 
@@ -141,7 +150,7 @@ export default function ProductionOrderPage() {
       const { data, error } = await confirmProduction({
         formulation_id: matchedFormulation.id,
         final_product: summary.formulation.final_product,
-        machine: summary.formulation.machine,
+        machine: selectedMachine || summary.formulation.machine || 'Sem misturador',
         batches: summary.batches,
         weight_per_batch: summary.formulation.weight_per_batch,
         total_compound_kg: summary.total_compound_kg,
@@ -201,11 +210,11 @@ export default function ProductionOrderPage() {
 
               <div className="space-y-2 mb-4">
                 <label className="text-foreground font-bold text-sm flex items-center gap-1">
-                  <Settings2 className="w-4 h-4" /> Máquina
+                  <Settings2 className="w-4 h-4" /> Máquina (opcional)
                 </label>
                 <select value={selectedMachine} onChange={e => setSelectedMachine(e.target.value)} disabled={!selectedProduct}
                   className="w-full bg-input border-2 border-border rounded-lg p-3 text-foreground font-semibold touch-target disabled:opacity-50">
-                  <option value="">Selecione...</option>
+                  <option value="">Sem misturador</option>
                   {machines.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
@@ -244,7 +253,7 @@ export default function ProductionOrderPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-primary font-black text-lg">{summary.formulation.final_product}</p>
-                  <p className="text-muted-foreground text-sm">{summary.formulation.machine} • {summary.batches} batidas</p>
+                  <p className="text-muted-foreground text-sm">{summary.formulation.machine || 'Sem misturador'} • {summary.batches} batidas</p>
                 </div>
                 <div className="text-right">
                   <p className="text-foreground text-2xl font-black">{summary.total_compound_kg.toFixed(1)}</p>

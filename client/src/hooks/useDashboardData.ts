@@ -91,7 +91,8 @@ export function useDashboardData() {
   const machineConsumption = useMemo<MachineConsumption[]>(() => {
     const map: Record<string, number> = {};
     productionOrders.filter(po => po.status === 'confirmed').forEach(po => {
-      map[po.machine] = (map[po.machine] || 0) + Number(po.total_compound_kg);
+      const key = po.machine || 'Sem misturador';
+      map[key] = (map[key] || 0) + Number(po.total_compound_kg);
     });
     return Object.entries(map)
       .map(([machine, totalKg]) => ({ machine, totalKg }))
