@@ -1,8 +1,7 @@
 import React from 'react';
-import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { BarChart3, Factory, Package, AlertTriangle, Truck, LayoutDashboard } from 'lucide-react';
+import { BarChart3, Factory, Package, AlertTriangle, Truck } from 'lucide-react';
 import StockByLocationChart from '@/components/dashboard/StockByLocationChart';
 import InventoryDivergenceChart from '@/components/dashboard/InventoryDivergenceChart';
 import MachineConsumptionChart from '@/components/dashboard/MachineConsumptionChart';
