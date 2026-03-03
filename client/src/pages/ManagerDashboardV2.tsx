@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIndustrialProducts, useStock, useStockMovements, useTransfers } from '@/hooks/useIndustrialData';
 import { useProductionOrders, useProductionBatches } from '@/hooks/useProductionData';
 import { useStockAdjustments } from '@/hooks/useInventoryCounting';
-import { useLocation } from 'wouter';
+
 import { BarChart3, ArrowLeftRight, ScrollText, Package, Factory, Layers, Scale, TrendingUp, AlertTriangle } from 'lucide-react';
 
 const LOCATIONS = ['CD', 'PCP', 'PMP', 'FABRICA'] as const;
@@ -115,7 +115,6 @@ function DashboardKPIs({ products, stock, getStock, getLocationTotalKg, movement
 }
 
 export default function ManagerDashboardV2() {
-  const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { products } = useIndustrialProducts();
   const { stock, getStock, getLocationTotalKg } = useStock();
@@ -150,15 +149,22 @@ export default function ManagerDashboardV2() {
   };
 
   return (
-    <div className="flex flex-col flex-1">
-      {/* Tab bar inside content area */}
-      <div className="flex border-b-2 border-border bg-card/50 px-2 overflow-x-auto">
+    <div className="p-4 max-w-7xl mx-auto w-full space-y-6">
+      <div>
+        <h1 className="text-xl font-black text-foreground flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-primary" /> Painel do Gerente
+        </h1>
+        <p className="text-muted-foreground text-xs">Visão gerencial completa • Estoque, Produção e Auditoria</p>
+      </div>
+
+      {/* Tab navigation */}
+      <div className="flex gap-1 overflow-x-auto border-b border-border pb-0">
         {tabs.map(tab => {
           const Icon = tab.icon;
           return (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 font-bold transition-colors whitespace-nowrap touch-target text-sm ${
-                activeTab === tab.id ? 'text-primary border-b-3 border-primary' : 'text-muted-foreground hover:text-foreground'
+              className={`flex items-center gap-2 px-3 py-2 font-bold transition-colors whitespace-nowrap text-sm rounded-t-lg ${
+                activeTab === tab.id ? 'text-primary border-b-2 border-primary bg-card' : 'text-muted-foreground hover:text-foreground'
               }`}>
               <Icon className="w-4 h-4" />{tab.label}
             </button>
@@ -166,7 +172,7 @@ export default function ManagerDashboardV2() {
         })}
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+      <div>
         {activeTab === 'dashboard' && (
           <DashboardKPIs products={products} stock={stock} getStock={getStock} getLocationTotalKg={getLocationTotalKg}
             movements={movements} transfers={transfers} batches={batches} adjustments={adjustments} productionOrders={productionOrders} />
