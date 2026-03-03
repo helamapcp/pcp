@@ -3,6 +3,23 @@
  * Pure business logic — no DB calls, no UI.
  */
 
+export interface Formulation {
+  id: string;
+  name: string;
+  final_product: string;
+  machine: string | null;
+  weight_per_batch: number;
+  active: boolean;
+}
+
+export interface FormulationItem {
+  id: string;
+  formulation_id: string;
+  product_id: string;
+  quantity_per_batch: number;
+  unit: string;
+}
+
 export interface CalculatedItem {
   product_id: string;
   product_name: string;
@@ -19,7 +36,7 @@ export interface CalculatedItem {
 }
 
 export interface ProductionSummary {
-  formulation: { id: string; name: string; final_product: string; machine: string | null; weight_per_batch: number; active: boolean };
+  formulation: Formulation;
   batches: number;
   total_compound_kg: number;
   items: CalculatedItem[];
