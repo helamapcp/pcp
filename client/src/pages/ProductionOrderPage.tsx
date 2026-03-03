@@ -150,7 +150,7 @@ export default function ProductionOrderPage() {
       const { data, error } = await confirmProduction({
         formulation_id: matchedFormulation.id,
         final_product: summary.formulation.final_product,
-        machine: selectedMachine || summary.formulation.machine || '',
+        machine: selectedMachine || summary.formulation.machine || null,
         batches: summary.batches,
         weight_per_batch: summary.formulation.weight_per_batch,
         total_compound_kg: summary.total_compound_kg,
