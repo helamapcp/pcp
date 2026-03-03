@@ -6,6 +6,7 @@ import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import AppLayout from "./components/layout/AppLayout";
 import EstoqueLogin from "./pages/EstoqueLogin";
 import OperatorDashboardV2 from "./pages/OperatorDashboardV2";
 import CDStockEntry from "./pages/CDStockEntry";
@@ -43,7 +44,11 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: Rea
 
   if (!user || !allowedRoles.includes(user.role)) return null;
 
-  return <Component />;
+  return (
+    <AppLayout>
+      <Component />
+    </AppLayout>
+  );
 }
 
 function Router() {
@@ -65,6 +70,8 @@ function Router() {
       
       {/* Admin routes */}
       <Route path="/admin" component={() => <ProtectedRoute component={AdminPanel} allowedRoles={['admin']} />} />
+      <Route path="/admin/products" component={() => <ProtectedRoute component={AdminPanel} allowedRoles={['admin']} />} />
+      <Route path="/admin/formulations" component={() => <ProtectedRoute component={AdminPanel} allowedRoles={['admin']} />} />
       <Route path="/admin/stock-adjustment" component={() => <ProtectedRoute component={AdminStockAdjustment} allowedRoles={['admin']} />} />
       <Route path="/admin/locations" component={() => <ProtectedRoute component={AdminLocationsPage} allowedRoles={['admin']} />} />
       <Route path="/admin/mixers" component={() => <ProtectedRoute component={AdminMixersPage} allowedRoles={['admin']} />} />
