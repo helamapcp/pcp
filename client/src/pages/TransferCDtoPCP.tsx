@@ -33,6 +33,7 @@ export default function TransferCDtoPCP() {
   const [selectedTransfer, setSelectedTransfer] = useState<string | null>(null);
   const [confirmItems, setConfirmItems] = useState<TransferItem[]>([]);
   const [sentQuantities, setSentQuantities] = useState<Record<string, string>>({});
+  const [confirmNotes, setConfirmNotes] = useState('');
 
   if (!user) return null;
 
