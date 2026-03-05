@@ -21,8 +21,8 @@ export default function ProductionOrderPage() {
   const { confirmProduction } = useProductionOrders();
 
   const [step, setStep] = useState<Step>('configure');
-  const [selectedProduct, setSelectedProduct] = useState('');
-  const [selectedMachine, setSelectedMachine] = useState('');
+  const [selectedFormulationId, setSelectedFormulationId] = useState('');
+  const [selectedMixerId, setSelectedMixerId] = useState('');
   const [batchesStr, setBatchesStr] = useState('1');
   const [submitting, setSubmitting] = useState(false);
   const [summary, setSummary] = useState<ProductionSummary | null>(null);
@@ -31,26 +31,11 @@ export default function ProductionOrderPage() {
   const batches = Math.max(1, parseInt(batchesStr) || 1);
   const [justifications, setJustifications] = useState<Record<string, string>>({});
 
-  const finalProducts = useMemo(() => [...new Set(formulations.map(f => f.final_product))], [formulations]);
-  const machines = useMemo(() => {
-    if (!selectedProduct) return [];
-    const formulationMachines = formulations
-      .filter(f => f.final_product === selectedProduct && f.machine)
-      .map(f => f.machine!);
-    const mixerNames = mixers.filter(m => m.active).map(m => m.name);
-    return [...new Set([...formulationMachines, ...mixerNames])];
-  }, [formulations, selectedProduct, mixers]);
+  const selectedFormulation = formulations.find(f => f.id === selectedFormulationId);
+  const activeMixers = useMemo(() => mixers.filter(m => m.active), [mixers]);
+  const selectedMixer = activeMixers.find(m => m.id === selectedMixerId);
 
-  const matchedFormulation = useMemo(() => {
-    if (!selectedProduct) return undefined;
-    if (selectedMachine) {
-      const exact = formulations.find(f => f.final_product === selectedProduct && f.machine === selectedMachine);
-      if (exact) return exact;
-    }
-    return formulations.find(f => f.final_product === selectedProduct && (!f.machine || f.machine === ''));
-  }, [formulations, selectedProduct, selectedMachine]);
-
-  const { items: formulationItems } = useFormulationItems(matchedFormulation?.id || null);
+  const { items: formulationItems } = useFormulationItems(selectedFormulationId || null);
 
   const productsMap = useMemo(() => {
     const m = new Map<string, typeof products[0]>();
@@ -67,11 +52,11 @@ export default function ProductionOrderPage() {
   }, [stock]);
 
   const handleCalculate = () => {
-    if (!matchedFormulation || formulationItems.length === 0) {
+    if (!selectedFormulation || formulationItems.length === 0) {
       toast.error('Formulação não encontrada ou sem itens');
       return;
     }
-    const result = calculateProduction(matchedFormulation, formulationItems, batches, productsMap, pcpStockMap);
+    const result = calculateProduction(selectedFormulation, formulationItems, batches, productsMap, pcpStockMap);
     setSummary(result);
     setOverrides({});
     setJustifications({});
@@ -122,8 +107,18 @@ export default function ProductionOrderPage() {
     });
   }, [summary, overrides, justifications]);
 
+  // Capacity warning
+  const capacityWarning = useMemo(() => {
+    if (!selectedMixer) return null;
+    const maxBatches = (selectedMixer as any).max_batches_per_day;
+    if (maxBatches && batches > maxBatches) {
+      return `Capacidade excedida: ${batches} batidas solicitadas, máximo ${maxBatches}/dia`;
+    }
+    return null;
+  }, [selectedMixer, batches]);
+
   const handleConfirm = async () => {
-    if (!summary || !user || !matchedFormulation) return;
+    if (!summary || !user || !selectedFormulation) return;
     setSubmitting(true);
 
     try {
@@ -140,12 +135,14 @@ export default function ProductionOrderPage() {
         };
       });
 
+      const mixerName = selectedMixer?.name || null;
+
       const { data, error } = await confirmProduction({
-        formulation_id: matchedFormulation.id,
-        final_product: summary.formulation.final_product,
-        machine: selectedMachine || summary.formulation.machine || null,
+        formulation_id: selectedFormulation.id,
+        final_product: selectedFormulation.final_product,
+        machine: mixerName,
         batches: summary.batches,
-        weight_per_batch: summary.formulation.weight_per_batch,
+        weight_per_batch: selectedFormulation.weight_per_batch,
         total_compound_kg: summary.total_compound_kg,
         user_id: user.id,
         user_name: user.fullName,
@@ -174,29 +171,49 @@ export default function ProductionOrderPage() {
           <div className="bg-card border-2 border-border rounded-lg p-4">
             <p className="text-muted-foreground text-sm mb-4">
               <Beaker className="w-4 h-4 inline mr-1" />
-              Selecione o produto final, máquina e número de batidas.
+              Selecione a formulação, misturador e número de batidas.
             </p>
 
-            <div className="space-y-2 mb-4">
-              <label className="text-foreground font-bold text-sm">Produto Final</label>
-              <select value={selectedProduct} onChange={e => { setSelectedProduct(e.target.value); setSelectedMachine(''); }}
-                className="w-full bg-input border-2 border-border rounded-lg p-3 text-foreground font-semibold touch-target">
-                <option value="">Selecione...</option>
-                {finalProducts.map(fp => <option key={fp} value={fp}>{fp}</option>)}
-              </select>
-            </div>
-
+            {/* Step 1: Formulation */}
             <div className="space-y-2 mb-4">
               <label className="text-foreground font-bold text-sm flex items-center gap-1">
-                <Settings2 className="w-4 h-4" /> Máquina (opcional)
+                <Beaker className="w-4 h-4" /> Formulação
               </label>
-              <select value={selectedMachine} onChange={e => setSelectedMachine(e.target.value)} disabled={!selectedProduct}
-                className="w-full bg-input border-2 border-border rounded-lg p-3 text-foreground font-semibold touch-target disabled:opacity-50">
-                <option value="">Sem misturador</option>
-                {machines.map(m => <option key={m} value={m}>{m}</option>)}
+              <select
+                value={selectedFormulationId}
+                onChange={e => { setSelectedFormulationId(e.target.value); setSelectedMixerId(''); }}
+                className="w-full bg-input border-2 border-border rounded-lg p-3 text-foreground font-semibold touch-target"
+              >
+                <option value="">Selecione uma formulação...</option>
+                {formulations.map(f => (
+                  <option key={f.id} value={f.id}>
+                    {f.name} — {f.final_product} ({f.weight_per_batch} kg/batida)
+                  </option>
+                ))}
               </select>
             </div>
 
+            {/* Step 2: Mixer */}
+            <div className="space-y-2 mb-4">
+              <label className="text-foreground font-bold text-sm flex items-center gap-1">
+                <Settings2 className="w-4 h-4" /> Misturador
+              </label>
+              <select
+                value={selectedMixerId}
+                onChange={e => setSelectedMixerId(e.target.value)}
+                disabled={!selectedFormulationId}
+                className="w-full bg-input border-2 border-border rounded-lg p-3 text-foreground font-semibold touch-target disabled:opacity-50"
+              >
+                <option value="">Selecione um misturador...</option>
+                {activeMixers.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} — {m.capacity_kg} kg
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Step 3: Batches */}
             <div className="space-y-2 mb-4">
               <label className="text-foreground font-bold text-sm flex items-center gap-1">
                 <Hash className="w-4 h-4" /> Número de Batidas
@@ -206,19 +223,36 @@ export default function ProductionOrderPage() {
                 className="w-full bg-input border-2 border-border rounded-lg p-3 text-foreground font-bold text-2xl text-center touch-target" />
             </div>
 
-            {matchedFormulation && (
+            {/* Capacity Warning */}
+            {capacityWarning && (
+              <div className="bg-destructive/10 border-2 border-destructive/30 rounded-lg p-3 mb-4 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                <p className="text-destructive text-sm font-bold">{capacityWarning}</p>
+              </div>
+            )}
+
+            {/* Auto-calculated summary */}
+            {selectedFormulation && (
               <div className="bg-secondary rounded-lg p-3 border border-border">
-                <p className="text-foreground text-sm font-bold">📋 {matchedFormulation.name}</p>
+                <p className="text-foreground text-sm font-bold">📋 {selectedFormulation.name}</p>
                 <p className="text-muted-foreground text-xs mt-1">
-                  Peso/batida: {matchedFormulation.weight_per_batch} kg •
-                  Total: <span className="text-primary font-bold">{(batches * matchedFormulation.weight_per_batch).toFixed(1)} kg</span>
+                  Produto Final: <span className="text-foreground font-semibold">{selectedFormulation.final_product}</span>
+                </p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Peso/batida: {selectedFormulation.weight_per_batch} kg •
+                  Total: <span className="text-primary font-bold">{(batches * selectedFormulation.weight_per_batch).toFixed(1)} kg</span>
                 </p>
                 <p className="text-muted-foreground text-xs">Itens na formulação: {formulationItems.length}</p>
+                {selectedMixer && (
+                  <p className="text-muted-foreground text-xs mt-1">
+                    Misturador: <span className="text-foreground font-semibold">{selectedMixer.name}</span> ({selectedMixer.capacity_kg} kg)
+                  </p>
+                )}
               </div>
             )}
           </div>
 
-          <IndustrialButton onClick={handleCalculate} disabled={!matchedFormulation || formulationItems.length === 0}
+          <IndustrialButton onClick={handleCalculate} disabled={!selectedFormulation || formulationItems.length === 0}
             className="w-full"
             variant="primary"
             size="lg"
@@ -233,8 +267,10 @@ export default function ProductionOrderPage() {
           <div className="bg-card border-2 border-primary rounded-lg p-4">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-primary font-black text-lg">{summary.formulation.final_product}</p>
-                <p className="text-muted-foreground text-sm">{summary.formulation.machine || 'Sem misturador'} • {summary.batches} batidas</p>
+                <p className="text-primary font-black text-lg">{summary.formulation.name}</p>
+                <p className="text-muted-foreground text-sm">
+                  {summary.formulation.final_product} • {selectedMixer?.name || 'Sem misturador'} • {summary.batches} batidas
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-foreground text-2xl font-black">{summary.total_compound_kg.toFixed(1)}</p>
@@ -375,21 +411,30 @@ export default function ProductionOrderPage() {
               </div>
             )}
             <p className="text-muted-foreground">
-              {summary.formulation.final_product} • {summary.formulation.machine || 'Sem misturador'} • {summary.batches} batidas
+              {summary.formulation.name} • {summary.formulation.final_product} • {selectedMixer?.name || 'Sem misturador'} • {summary.batches} batidas
             </p>
-            <p className="text-primary font-bold text-xl mt-2">
-              {summary.total_compound_kg.toFixed(1)} kg de composto
+            <p className="text-foreground font-bold text-lg mt-2">
+              {summary.total_compound_kg.toFixed(1)} kg
             </p>
             <p className="text-muted-foreground text-xs mt-2">
-              ✅ Transação atômica • Estoque PCP deduzido • Transferência PCP→PMP • Lote rastreável
+              ✅ Estoque deduzido do PCP • Lote criado • Transferência PCP→PMP registrada
             </p>
           </div>
 
           <div className="flex gap-3">
-            <IndustrialButton onClick={() => { setStep('configure'); setSummary(null); setSelectedProduct(''); setSelectedMachine(''); setBatchesStr('1'); setResultBatchCode(null); }}
+            <IndustrialButton
+              onClick={() => {
+                setStep('configure');
+                setSummary(null);
+                setSelectedFormulationId('');
+                setSelectedMixerId('');
+                setBatchesStr('1');
+                setResultBatchCode(null);
+              }}
               className="flex-1"
               variant="primary"
               size="lg"
+              icon={<Factory className="w-5 h-5" />}
             >
               NOVA PRODUÇÃO
             </IndustrialButton>
