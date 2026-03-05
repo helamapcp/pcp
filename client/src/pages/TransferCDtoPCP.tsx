@@ -353,11 +353,18 @@ export default function TransferCDtoPCP() {
             );
           })()}
 
-          <IndustrialButton size="lg" variant="success" fullWidth onClick={handleConfirmTransfer}
-            disabled={submitting || confirmItems.some(i => !sentQuantities[i.id] || parseFloat(sentQuantities[i.id]) <= 0)}
-            icon={<Check className="w-5 h-5" />}>
-            {submitting ? 'Confirmando...' : 'Confirmar Transferência'}
-          </IndustrialButton>
+          <div className="flex gap-3">
+            <IndustrialButton size="lg" variant="danger" fullWidth onClick={() => openCancelDialog(selectedTransfer)}
+              disabled={submitting}
+              icon={<X className="w-5 h-5" />}>
+              Cancelar Transferência
+            </IndustrialButton>
+            <IndustrialButton size="lg" variant="success" fullWidth onClick={handleConfirmTransfer}
+              disabled={submitting || confirmItems.some(i => !sentQuantities[i.id] || parseFloat(sentQuantities[i.id]) <= 0)}
+              icon={<Check className="w-5 h-5" />}>
+              {submitting ? 'Confirmando...' : 'Confirmar'}
+            </IndustrialButton>
+          </div>
         </div>
       </div>
     );
@@ -529,42 +536,92 @@ export default function TransferCDtoPCP() {
           <div className="space-y-3">
             <h2 className="text-foreground font-bold text-lg">Pendentes ({pendingTransfers.length})</h2>
             {pendingTransfers.map(t => (
-              <button key={t.id} onClick={() => loadTransferItems(t.id)}
-                className="w-full bg-card border-2 border-industrial-warning rounded-lg p-4 text-left hover:bg-secondary transition-colors touch-target">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-foreground font-bold">CD → PCP</p>
-                    <p className="text-muted-foreground text-xs">
-                      Solicitado por {t.requested_by_name} • {new Date(t.created_at).toLocaleString('pt-BR')}
-                    </p>
+              <div key={t.id} className="bg-card border-2 border-industrial-warning rounded-lg p-4">
+                <button onClick={() => loadTransferItems(t.id)}
+                  className="w-full text-left hover:bg-secondary transition-colors rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-foreground font-bold">CD → PCP</p>
+                      <p className="text-muted-foreground text-xs">
+                        Solicitado por {t.requested_by_name} • {new Date(t.created_at).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    {getStatusBadge('pending')}
                   </div>
-                  {getStatusBadge('pending')}
+                </button>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={() => openCancelDialog(t.id)}
+                    className="text-destructive text-xs font-bold hover:underline"
+                  >
+                    Cancelar
+                  </button>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
 
         <div className="space-y-3">
           <h2 className="text-foreground font-bold text-lg">Histórico</h2>
-          {transfers.filter(t => t.from_location === 'CD' && t.to_location === 'PCP' && t.status === 'completed').slice(0, 20).map(t => (
-            <div key={t.id} className="bg-card border-2 border-border rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-foreground font-bold text-sm">CD → PCP</p>
-                  <p className="text-muted-foreground text-xs">
-                    {t.confirmed_by_name} • {new Date(t.confirmed_at || t.created_at).toLocaleString('pt-BR')}
-                  </p>
+          {transfers
+            .filter(t => t.from_location === 'CD' && t.to_location === 'PCP' && (t.status === 'completed' || t.status === 'cancelled'))
+            .slice(0, 20)
+            .map(t => (
+              <div key={t.id} className={`bg-card border-2 rounded-lg p-4 ${t.status === 'cancelled' ? 'border-destructive/30 opacity-70' : 'border-border'}`}>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className={`font-bold text-sm ${t.status === 'cancelled' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>CD → PCP</p>
+                    <p className="text-muted-foreground text-xs">
+                      {t.confirmed_by_name} • {new Date(t.confirmed_at || t.created_at).toLocaleString('pt-BR')}
+                    </p>
+                    {t.status === 'cancelled' && t.notes && (
+                      <p className="text-destructive text-xs mt-1">{t.notes}</p>
+                    )}
+                  </div>
+                  {t.status === 'cancelled' ? getStatusBadge('cancelled') : (
+                    <span className="px-2 py-1 rounded text-xs font-bold bg-industrial-success/20 text-industrial-success">Concluída</span>
+                  )}
                 </div>
-                <span className="px-2 py-1 rounded text-xs font-bold bg-industrial-success/20 text-industrial-success">Concluída</span>
               </div>
-            </div>
-          ))}
-          {transfers.filter(t => t.status === 'completed').length === 0 && (
-            <p className="text-muted-foreground text-center py-6">Nenhuma transferência concluída ainda.</p>
+            ))}
+          {transfers.filter(t => t.from_location === 'CD' && t.to_location === 'PCP' && (t.status === 'completed' || t.status === 'cancelled')).length === 0 && (
+            <p className="text-muted-foreground text-center py-6">Nenhuma transferência no histórico.</p>
           )}
         </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar Transferência?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar esta transferência? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <label className="text-sm font-medium text-foreground">Motivo do cancelamento (opcional)</label>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Ex: Pedido incorreto, mudança de prioridade..."
+              rows={3}
+              className="w-full mt-1 px-3 py-2 bg-input border-2 border-border rounded-lg text-foreground text-sm placeholder-muted-foreground resize-none"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelTransfer}
+              disabled={submitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {submitting ? 'Cancelando...' : 'Confirmar Cancelamento'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
