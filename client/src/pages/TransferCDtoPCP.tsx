@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useIndustrialProducts,
@@ -33,6 +34,7 @@ export default function TransferCDtoPCP() {
   const [selectedTransfer, setSelectedTransfer] = useState<string | null>(null);
   const [confirmItems, setConfirmItems] = useState<TransferItem[]>([]);
   const [sentQuantities, setSentQuantities] = useState<Record<string, string>>({});
+  const [confirmNotes, setConfirmNotes] = useState('');
 
   if (!user) return null;
 
@@ -121,6 +123,29 @@ export default function TransferCDtoPCP() {
 
   const handleConfirmTransfer = async () => {
     if (!selectedTransfer) return;
+
+    // Check if any item has difference and require notes
+    const hasDifference = confirmItems.some(item => {
+      const product = products.find(p => p.id === item.product_id);
+      const sentQty = parseFloat(sentQuantities[item.id] || '0');
+      const sentKg = product ? convertToKg(sentQty, item.sent_unit, product) : 0;
+      const requestedKg = product ? convertToKg(item.requested_quantity, item.requested_unit, product) : 0;
+      return Math.abs(sentKg - requestedKg) / Math.max(requestedKg, 0.001) >= 0.01;
+    });
+
+    if (hasDifference && !confirmNotes.trim()) {
+      toast.error('Informe o motivo da divergência nas observações');
+      return;
+    }
+
+    // Save notes on the transfer record if provided
+    if (confirmNotes.trim()) {
+      await supabase
+        .from('transfers')
+        .update({ notes: confirmNotes.trim() })
+        .eq('id', selectedTransfer);
+    }
+
     setSubmitting(true);
     try {
       const confirmed = confirmItems.map(item => ({
@@ -137,6 +162,7 @@ export default function TransferCDtoPCP() {
       setSelectedTransfer(null);
       setConfirmItems([]);
       setSentQuantities({});
+      setConfirmNotes('');
       await refetchStock();
       await refetchTransfers();
     } catch (err: any) {
@@ -169,7 +195,7 @@ export default function TransferCDtoPCP() {
       <div className="flex flex-col h-full">
         <div className="bg-card border-b-2 border-border p-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => { setMode('list'); setSelectedTransfer(null); }} className="p-2 hover:bg-secondary rounded-lg touch-target">
+            <button onClick={() => { setMode('list'); setSelectedTransfer(null); setConfirmNotes(''); }} className="p-2 hover:bg-secondary rounded-lg touch-target">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div>
@@ -251,6 +277,35 @@ export default function TransferCDtoPCP() {
               </div>
             );
           })}
+
+          {/* Observation/reason when quantities differ */}
+          {(() => {
+            const hasDiff = confirmItems.some(item => {
+              const product = products.find(p => p.id === item.product_id);
+              const sentQty = parseFloat(sentQuantities[item.id] || '0');
+              const sentKg = product ? convertToKg(sentQty, item.sent_unit, product) : 0;
+              const requestedKg = product ? convertToKg(item.requested_quantity, item.requested_unit, product) : 0;
+              return sentQty > 0 && Math.abs(sentKg - requestedKg) / Math.max(requestedKg, 0.001) >= 0.01;
+            });
+
+            if (!hasDiff) return null;
+
+            return (
+              <div className="bg-card border-2 border-industrial-warning rounded-xl p-4 space-y-2">
+                <p className="text-foreground font-bold text-sm">⚠️ Divergência detectada</p>
+                <p className="text-muted-foreground text-xs">
+                  A quantidade enviada difere da solicitada. Informe o motivo abaixo (obrigatório).
+                </p>
+                <textarea
+                  value={confirmNotes}
+                  onChange={(e) => setConfirmNotes(e.target.value)}
+                  placeholder="Ex: Estoque insuficiente, embalagem avariada, erro na contagem..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-input border-2 border-border rounded-lg text-foreground text-sm placeholder-muted-foreground resize-none"
+                />
+              </div>
+            );
+          })()}
 
           <IndustrialButton size="lg" variant="success" fullWidth onClick={handleConfirmTransfer}
             disabled={submitting || confirmItems.some(i => !sentQuantities[i.id] || parseFloat(sentQuantities[i.id]) <= 0)}
