@@ -122,6 +122,29 @@ export default function TransferCDtoPCP() {
 
   const handleConfirmTransfer = async () => {
     if (!selectedTransfer) return;
+
+    // Check if any item has difference and require notes
+    const hasDifference = confirmItems.some(item => {
+      const product = products.find(p => p.id === item.product_id);
+      const sentQty = parseFloat(sentQuantities[item.id] || '0');
+      const sentKg = product ? convertToKg(sentQty, item.sent_unit, product) : 0;
+      const requestedKg = product ? convertToKg(item.requested_quantity, item.requested_unit, product) : 0;
+      return Math.abs(sentKg - requestedKg) / Math.max(requestedKg, 0.001) >= 0.01;
+    });
+
+    if (hasDifference && !confirmNotes.trim()) {
+      toast.error('Informe o motivo da divergência nas observações');
+      return;
+    }
+
+    // Save notes on the transfer record if provided
+    if (confirmNotes.trim()) {
+      await supabase
+        .from('transfers')
+        .update({ notes: confirmNotes.trim() })
+        .eq('id', selectedTransfer);
+    }
+
     setSubmitting(true);
     try {
       const confirmed = confirmItems.map(item => ({
@@ -138,6 +161,7 @@ export default function TransferCDtoPCP() {
       setSelectedTransfer(null);
       setConfirmItems([]);
       setSentQuantities({});
+      setConfirmNotes('');
       await refetchStock();
       await refetchTransfers();
     } catch (err: any) {
