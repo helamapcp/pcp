@@ -242,7 +242,7 @@ export function useTransfers() {
       .insert({
         from_location: fromLocation,
         to_location: toLocation,
-        status: 'pending',
+        status: 'requested',
         requested_by: userId,
         requested_by_name: userName,
         notes,
@@ -256,7 +256,7 @@ export function useTransfers() {
     const transferItems = items.map(item => ({
       transfer_id: transfer.id,
       ...item,
-      status: 'pending',
+      status: 'requested',
     }));
 
     const { error: itemsError } = await supabase

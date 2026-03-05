@@ -5,7 +5,7 @@
 import {
   Package, ArrowRightLeft, Factory, Truck, ClipboardList,
   BarChart3, ScrollText, Layers, Scale, Users, Settings2,
-  MapPin, FlaskConical, LayoutDashboard,
+  MapPin, FlaskConical, LayoutDashboard, CalendarDays, ShoppingCart,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -32,6 +32,7 @@ export const NAVIGATION: Record<AppRole, NavGroup[]> = {
         { label: 'Entrada CD', path: '/operator/cd-entry', icon: Package, description: 'Recebimento de materiais' },
         { label: 'Transferência CD→PCP', path: '/operator/transfer-cd-pcp', icon: ArrowRightLeft, description: 'Criar transferências' },
         { label: 'Produção PCP→PMP', path: '/operator/production', icon: Factory, description: 'Ordem de produção' },
+        { label: 'Planejamento', path: '/operator/planning', icon: CalendarDays, description: 'Planejamento de produção' },
         { label: 'Envio PMP→Fábrica', path: '/operator/transfer-pmp-factory', icon: Truck, description: 'Transferir composto' },
         { label: 'Inventário', path: '/operator/inventory-count', icon: ClipboardList, description: 'Contagem física' },
       ],
@@ -45,6 +46,8 @@ export const NAVIGATION: Record<AppRole, NavGroup[]> = {
         { label: 'Movimentações', path: '/manager/movimentacoes', icon: Package, description: 'Histórico de movimentações' },
         { label: 'Transferências', path: '/manager/transferencias', icon: ArrowRightLeft, description: 'Transferências entre locais' },
         { label: 'Produção', path: '/manager/producao', icon: Factory, description: 'Ordens de produção' },
+        { label: 'Programação', path: '/manager/programacao', icon: CalendarDays, description: 'Programação de produção' },
+        { label: 'Compras', path: '/manager/compras', icon: ShoppingCart, description: 'Sugestões de compra' },
         { label: 'Lotes', path: '/manager/lotes', icon: Layers, description: 'Lotes produzidos' },
         { label: 'Ajustes', path: '/manager/ajustes', icon: Scale, description: 'Ajustes de estoque' },
         { label: 'Auditoria', path: '/manager/auditoria', icon: ScrollText, description: 'Trilha de auditoria' },
