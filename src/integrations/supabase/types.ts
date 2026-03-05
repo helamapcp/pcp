@@ -400,6 +400,90 @@ export type Database = {
         }
         Relationships: []
       }
+      production_bags: {
+        Row: {
+          bag_number: number
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          formulation_id: string
+          id: string
+          location_code: string
+          production_order_id: string | null
+          production_planning_id: string | null
+          status: string
+          transfer_id: string | null
+          transferred_to: string | null
+          weight_kg: number
+        }
+        Insert: {
+          bag_number?: number
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          formulation_id: string
+          id?: string
+          location_code?: string
+          production_order_id?: string | null
+          production_planning_id?: string | null
+          status?: string
+          transfer_id?: string | null
+          transferred_to?: string | null
+          weight_kg?: number
+        }
+        Update: {
+          bag_number?: number
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          formulation_id?: string
+          id?: string
+          location_code?: string
+          production_order_id?: string | null
+          production_planning_id?: string | null
+          status?: string
+          transfer_id?: string | null
+          transferred_to?: string | null
+          weight_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_bags_formulation_id_fkey"
+            columns: ["formulation_id"]
+            isOneToOne: false
+            referencedRelation: "formulations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_bags_location_code_fkey"
+            columns: ["location_code"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "production_bags_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_bags_production_planning_id_fkey"
+            columns: ["production_planning_id"]
+            isOneToOne: false
+            referencedRelation: "production_planning"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_bags_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: false
+            referencedRelation: "transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_batches: {
         Row: {
           batch_code: string | null
@@ -575,6 +659,97 @@ export type Database = {
             columns: ["formulation_id"]
             isOneToOne: false
             referencedRelation: "formulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_planning: {
+        Row: {
+          batches: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_by_name: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          executed_at: string | null
+          executed_by: string | null
+          executed_by_name: string | null
+          formulation_id: string
+          id: string
+          mixer_id: string
+          notes: string | null
+          production_date: string
+          production_order_id: string | null
+          status: string
+          total_weight_kg: number
+          updated_at: string | null
+        }
+        Insert: {
+          batches?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_by_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          executed_by_name?: string | null
+          formulation_id: string
+          id?: string
+          mixer_id: string
+          notes?: string | null
+          production_date: string
+          production_order_id?: string | null
+          status?: string
+          total_weight_kg?: number
+          updated_at?: string | null
+        }
+        Update: {
+          batches?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_by_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          executed_by_name?: string | null
+          formulation_id?: string
+          id?: string
+          mixer_id?: string
+          notes?: string | null
+          production_date?: string
+          production_order_id?: string | null
+          status?: string
+          total_weight_kg?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_planning_formulation_id_fkey"
+            columns: ["formulation_id"]
+            isOneToOne: false
+            referencedRelation: "formulations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_planning_mixer_id_fkey"
+            columns: ["mixer_id"]
+            isOneToOne: false
+            referencedRelation: "mixers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_planning_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
             referencedColumns: ["id"]
           },
         ]
