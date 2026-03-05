@@ -46,10 +46,19 @@ export default function TransferCDtoPCP() {
   const [sentQuantities, setSentQuantities] = useState<Record<string, string>>({});
   const [confirmNotes, setConfirmNotes] = useState('');
 
+  // Cancel state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+
   if (!user) return null;
 
   const pendingTransfers = transfers.filter(
     t => t.from_location === 'CD' && t.to_location === 'PCP' && t.status === 'pending'
+  );
+
+  const cancelledTransfers = transfers.filter(
+    t => t.from_location === 'CD' && t.to_location === 'PCP' && t.status === 'cancelled'
   );
 
   const addItem = (productId: string) => {
