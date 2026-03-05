@@ -17,6 +17,8 @@ export const canViewDashboard = (role: AppRole) => role === 'gerente' || role ==
 export const canPerformTransfer = (role: AppRole) => role === 'operador' || role === 'admin';
 export const canCountInventory = (role: AppRole) => role === 'operador' || role === 'admin';
 export const canViewExecutiveDashboard = (role: AppRole) => role === 'gerente' || role === 'admin';
+export const canCreatePlanning = (role: AppRole) => role === 'gerente' || role === 'admin';
+export const canExecutePlanning = (role: AppRole) => role === 'operador' || role === 'admin';
 
 // Route access map
 export const ROLE_ROUTES: Record<AppRole, string[]> = {
