@@ -82,6 +82,7 @@ export type Database = {
           id: string
           machine: string | null
           name: string
+          parent_formulation_id: string | null
           updated_at: string | null
           weight_per_batch: number
         }
@@ -92,6 +93,7 @@ export type Database = {
           id?: string
           machine?: string | null
           name: string
+          parent_formulation_id?: string | null
           updated_at?: string | null
           weight_per_batch?: number
         }
@@ -102,10 +104,19 @@ export type Database = {
           id?: string
           machine?: string | null
           name?: string
+          parent_formulation_id?: string | null
           updated_at?: string | null
           weight_per_batch?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "formulations_parent_formulation_id_fkey"
+            columns: ["parent_formulation_id"]
+            isOneToOne: false
+            referencedRelation: "formulations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inventory_count_items: {
         Row: {
@@ -291,12 +302,79 @@ export type Database = {
         }
         Relationships: []
       }
+      material_excess: {
+        Row: {
+          consumed: boolean
+          consumed_by_schedule_id: string | null
+          created_at: string | null
+          excess_kg: number
+          id: string
+          location_code: string
+          product_id: string
+          production_date: string
+          source_schedule_id: string | null
+        }
+        Insert: {
+          consumed?: boolean
+          consumed_by_schedule_id?: string | null
+          created_at?: string | null
+          excess_kg?: number
+          id?: string
+          location_code: string
+          product_id: string
+          production_date: string
+          source_schedule_id?: string | null
+        }
+        Update: {
+          consumed?: boolean
+          consumed_by_schedule_id?: string | null
+          created_at?: string | null
+          excess_kg?: number
+          id?: string
+          location_code?: string
+          product_id?: string
+          production_date?: string
+          source_schedule_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_excess_consumed_by_schedule_id_fkey"
+            columns: ["consumed_by_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "production_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_excess_location_code_fkey"
+            columns: ["location_code"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "material_excess_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_excess_source_schedule_id_fkey"
+            columns: ["source_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "production_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mixers: {
         Row: {
           active: boolean
           capacity_kg: number
           created_at: string | null
+          cycle_time_minutes: number
           id: string
+          max_batches_per_day: number
           name: string
           production_line: string | null
         }
@@ -304,7 +382,9 @@ export type Database = {
           active?: boolean
           capacity_kg?: number
           created_at?: string | null
+          cycle_time_minutes?: number
           id?: string
+          max_batches_per_day?: number
           name: string
           production_line?: string | null
         }
@@ -312,7 +392,9 @@ export type Database = {
           active?: boolean
           capacity_kg?: number
           created_at?: string | null
+          cycle_time_minutes?: number
           id?: string
+          max_batches_per_day?: number
           name?: string
           production_line?: string | null
         }
@@ -497,6 +579,72 @@ export type Database = {
           },
         ]
       }
+      production_schedules: {
+        Row: {
+          batches: number
+          confirmed_at: string | null
+          confirmed_by: string | null
+          confirmed_by_name: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          formulation_id: string
+          id: string
+          mixer_id: string
+          notes: string | null
+          production_date: string
+          status: string
+          total_weight_kg: number
+        }
+        Insert: {
+          batches?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          confirmed_by_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          formulation_id: string
+          id?: string
+          mixer_id: string
+          notes?: string | null
+          production_date: string
+          status?: string
+          total_weight_kg?: number
+        }
+        Update: {
+          batches?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          confirmed_by_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          formulation_id?: string
+          id?: string
+          mixer_id?: string
+          notes?: string | null
+          production_date?: string
+          status?: string
+          total_weight_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_schedules_formulation_id_fkey"
+            columns: ["formulation_id"]
+            isOneToOne: false
+            referencedRelation: "formulations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_schedules_mixer_id_fkey"
+            columns: ["mixer_id"]
+            isOneToOne: false
+            referencedRelation: "mixers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           base_unit: string
@@ -561,6 +709,66 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      purchase_suggestions: {
+        Row: {
+          available_stock_kg: number
+          created_at: string | null
+          id: string
+          notes: string | null
+          product_id: string
+          production_schedule_id: string | null
+          required_quantity_kg: number
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_by_name: string | null
+          status: string
+          suggested_purchase_kg: number
+        }
+        Insert: {
+          available_stock_kg?: number
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id: string
+          production_schedule_id?: string | null
+          required_quantity_kg?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_by_name?: string | null
+          status?: string
+          suggested_purchase_kg?: number
+        }
+        Update: {
+          available_stock_kg?: number
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string
+          production_schedule_id?: string | null
+          required_quantity_kg?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_by_name?: string | null
+          status?: string
+          suggested_purchase_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_suggestions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_suggestions_production_schedule_id_fkey"
+            columns: ["production_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "production_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       separations: {
         Row: {
@@ -906,6 +1114,10 @@ export type Database = {
       }
       transfers: {
         Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_by_name: string | null
           confirmed_at: string | null
           confirmed_by: string | null
           confirmed_by_name: string | null
@@ -919,6 +1131,10 @@ export type Database = {
           to_location: string
         }
         Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_by_name?: string | null
           confirmed_at?: string | null
           confirmed_by?: string | null
           confirmed_by_name?: string | null
@@ -932,6 +1148,10 @@ export type Database = {
           to_location: string
         }
         Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_by_name?: string | null
           confirmed_at?: string | null
           confirmed_by?: string | null
           confirmed_by_name?: string | null

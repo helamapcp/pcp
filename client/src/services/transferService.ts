@@ -21,7 +21,7 @@ export async function createTransferRequest(
     .insert({
       from_location: fromLocation,
       to_location: toLocation,
-      status: 'pending',
+      status: 'requested',
       requested_by: userId,
       requested_by_name: userName,
       notes,
@@ -39,7 +39,7 @@ export async function createTransferRequest(
     sent_quantity: item.requested_quantity,
     sent_unit: item.requested_unit,
     sent_total_kg: 0,
-    status: 'pending',
+    status: 'requested',
   }));
 
   const { error: itemsError } = await supabase
@@ -97,7 +97,7 @@ export async function cancelTransfer(
   userName: string,
   reason?: string
 ) {
-  // Validate transfer is still pending
+  // Validate transfer is cancellable
   const { data: transfer, error: fetchError } = await supabase
     .from('transfers')
     .select('status')
@@ -106,8 +106,8 @@ export async function cancelTransfer(
 
   if (fetchError || !transfer) return { error: fetchError || new Error('Transferência não encontrada'), data: null };
 
-  if (transfer.status !== 'pending') {
-    return { error: new Error('Apenas transferências pendentes podem ser canceladas'), data: null };
+  if (!['requested', 'separating'].includes(transfer.status)) {
+    return { error: new Error('Apenas transferências solicitadas ou em separação podem ser canceladas'), data: null };
   }
 
   const notes = reason?.trim()
@@ -118,9 +118,10 @@ export async function cancelTransfer(
     .from('transfers')
     .update({
       status: 'cancelled',
-      confirmed_by: userId,
-      confirmed_by_name: userName,
-      confirmed_at: new Date().toISOString(),
+      cancelled_by: userId,
+      cancelled_by_name: userName,
+      cancelled_at: new Date().toISOString(),
+      cancel_reason: reason?.trim() || null,
       notes,
     })
     .eq('id', transferId)
