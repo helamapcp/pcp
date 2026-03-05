@@ -24,6 +24,9 @@ export async function confirmProductionRPC(
   }>,
   notes?: string
 ) {
+  // Frontend safeguard: ensure items is always an array, never use JSON.stringify
+  const safeItems = Array.isArray(items) ? items : [items];
+
   const { data, error } = await supabase.rpc('confirm_production', {
     p_formulation_id: formulationId,
     p_final_product: finalProduct,
@@ -33,7 +36,7 @@ export async function confirmProductionRPC(
     p_total_compound_kg: totalCompoundKg,
     p_user_id: userId,
     p_user_name: userName,
-    p_items: JSON.stringify(items),
+    p_items: safeItems,
     p_notes: notes || null,
   });
 
