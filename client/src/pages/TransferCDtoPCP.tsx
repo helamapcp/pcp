@@ -54,7 +54,7 @@ export default function TransferCDtoPCP() {
   if (!user) return null;
 
   const pendingTransfers = transfers.filter(
-    t => t.from_location === 'CD' && t.to_location === 'PCP' && t.status === 'pending'
+    t => t.from_location === 'CD' && t.to_location === 'PCP' && ['requested', 'separating', 'ready'].includes(t.status)
   );
 
   const cancelledTransfers = transfers.filter(
@@ -221,14 +221,19 @@ export default function TransferCDtoPCP() {
       exact: 'bg-industrial-success/20 text-industrial-success',
       below: 'bg-industrial-warning/20 text-industrial-warning',
       above: 'bg-primary/20 text-primary',
+      requested: 'bg-secondary text-secondary-foreground',
+      separating: 'bg-industrial-warning/20 text-industrial-warning',
+      ready: 'bg-primary/20 text-primary',
       pending: 'bg-secondary text-secondary-foreground',
       cancelled: 'bg-destructive/20 text-destructive',
     };
     const labels: Record<string, string> = {
-      exact: 'Exato', below: 'Abaixo', above: 'Acima', pending: 'Pendente', cancelled: 'Cancelada',
+      exact: 'Exato', below: 'Abaixo', above: 'Acima',
+      requested: 'Solicitada', separating: 'Em Separação', ready: 'Pronta',
+      pending: 'Pendente', cancelled: 'Cancelada',
     };
     return (
-      <span className={`px-2 py-1 rounded text-xs font-bold ${styles[status] || styles.pending}`}>
+      <span className={`px-2 py-1 rounded text-xs font-bold ${styles[status] || styles.requested}`}>
         {labels[status] || status}
       </span>
     );
