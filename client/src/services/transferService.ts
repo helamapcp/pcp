@@ -64,9 +64,12 @@ export async function confirmTransferRPC(
   userId: string,
   userName: string
 ) {
+  // Ensure confirmedItems is always an array
+  const itemsArray = Array.isArray(confirmedItems) ? confirmedItems : [confirmedItems];
+
   const { data, error } = await supabase.rpc('confirm_transfer', {
     p_transfer_id: transferId,
-    p_confirmed_items: JSON.stringify(confirmedItems),
+    p_confirmed_items: itemsArray as any,
     p_user_id: userId,
     p_user_name: userName,
   });
