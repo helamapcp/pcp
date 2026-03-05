@@ -32,8 +32,8 @@ export const NAVIGATION: Record<AppRole, NavGroup[]> = {
         { label: 'Entrada CD', path: '/operator/cd-entry', icon: Package, description: 'Recebimento de materiais' },
         { label: 'Transferência CD→PCP', path: '/operator/transfer-cd-pcp', icon: ArrowRightLeft, description: 'Criar transferências' },
         { label: 'Produção PCP→PMP', path: '/operator/production', icon: Factory, description: 'Ordem de produção' },
-        { label: 'Planejamento', path: '/operator/planning', icon: CalendarDays, description: 'Planejamento de produção' },
-        { label: 'Envio PMP→Fábrica', path: '/operator/transfer-pmp-factory', icon: Truck, description: 'Transferir composto' },
+        { label: 'Sacas Produzidas', path: '/operator/production-bags', icon: Package, description: 'Registrar sacas de composto' },
+        { label: 'Envio PMP→Fábrica', path: '/operator/transfer-pmp-factory', icon: Truck, description: 'Transferir sacas' },
         { label: 'Inventário', path: '/operator/inventory-count', icon: ClipboardList, description: 'Contagem física' },
       ],
     },
@@ -43,6 +43,7 @@ export const NAVIGATION: Record<AppRole, NavGroup[]> = {
       title: 'Gestão',
       items: [
         { label: 'Dashboard', path: '/manager', icon: BarChart3, description: 'KPIs e visão analítica' },
+        { label: 'Planejamento', path: '/manager/planejamento', icon: CalendarDays, description: 'Planejar produção' },
         { label: 'Movimentações', path: '/manager/movimentacoes', icon: Package, description: 'Histórico de movimentações' },
         { label: 'Transferências', path: '/manager/transferencias', icon: ArrowRightLeft, description: 'Transferências entre locais' },
         { label: 'Produção', path: '/manager/producao', icon: Factory, description: 'Ordens de produção' },

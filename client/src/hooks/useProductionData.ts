@@ -126,6 +126,9 @@ export function useProductionOrders() {
       new_excess_kg?: number;
     }>;
   }) => {
+    // Frontend safeguard: ensure items is always an array, never use JSON.stringify
+    const safeItems = Array.isArray(params.items) ? params.items : [params.items];
+
     const { data, error } = await supabase.rpc('confirm_production', {
       p_formulation_id: params.formulation_id,
       p_final_product: params.final_product,
@@ -136,7 +139,7 @@ export function useProductionOrders() {
       p_user_id: params.user_id,
       p_user_name: params.user_name,
       p_notes: params.notes || null,
-      p_items: JSON.stringify(params.items),
+      p_items: safeItems,
     });
 
     if (error) return { error, data: null };

@@ -12,7 +12,7 @@ import OperatorDashboardV2 from "./pages/OperatorDashboardV2";
 import CDStockEntry from "./pages/CDStockEntry";
 import TransferCDtoPCP from "./pages/TransferCDtoPCP";
 import ProductionOrderPage from "./pages/ProductionOrderPage";
-import ProductionPlanningPage from "./pages/ProductionPlanningPage";
+import ProductionBagsPage from "./pages/ProductionBagsPage";
 import TransferPMPtoFactory from "./pages/TransferPMPtoFactory";
 import InventoryCountPage from "./pages/InventoryCountPage";
 import AdminPanel from "./pages/AdminPanel";
@@ -28,6 +28,7 @@ import ManagerBatches from "./pages/manager/ManagerBatches";
 import ManagerAdjustments from "./pages/manager/ManagerAdjustments";
 import ManagerAudit from "./pages/manager/ManagerAudit";
 import ManagerPurchases from "./pages/manager/ManagerPurchases";
+import ManagerPlanning from "./pages/manager/ManagerPlanning";
 import ProductionSchedulePage from "./pages/ProductionSchedulePage";
 import { Loader2 } from 'lucide-react';
 
@@ -71,12 +72,13 @@ function Router() {
       <Route path="/operator/cd-entry" component={() => <ProtectedRoute component={CDStockEntry} allowedRoles={['operador']} />} />
       <Route path="/operator/transfer-cd-pcp" component={() => <ProtectedRoute component={TransferCDtoPCP} allowedRoles={['operador']} />} />
       <Route path="/operator/production" component={() => <ProtectedRoute component={ProductionOrderPage} allowedRoles={['operador']} />} />
-      <Route path="/operator/planning" component={() => <ProtectedRoute component={ProductionPlanningPage} allowedRoles={['operador']} />} />
+      <Route path="/operator/production-bags" component={() => <ProtectedRoute component={ProductionBagsPage} allowedRoles={['operador']} />} />
       <Route path="/operator/transfer-pmp-factory" component={() => <ProtectedRoute component={TransferPMPtoFactory} allowedRoles={['operador']} />} />
       <Route path="/operator/inventory-count" component={() => <ProtectedRoute component={InventoryCountPage} allowedRoles={['operador']} />} />
       
       {/* Manager routes */}
       <Route path="/manager" component={() => <ProtectedRoute component={ManagerDashboard} allowedRoles={['gerente']} />} />
+      <Route path="/manager/planejamento" component={() => <ProtectedRoute component={ManagerPlanning} allowedRoles={['gerente']} />} />
       <Route path="/manager/movimentacoes" component={() => <ProtectedRoute component={ManagerMovements} allowedRoles={['gerente']} />} />
       <Route path="/manager/transferencias" component={() => <ProtectedRoute component={ManagerTransfers} allowedRoles={['gerente']} />} />
       <Route path="/manager/producao" component={() => <ProtectedRoute component={ManagerProduction} allowedRoles={['gerente']} />} />
