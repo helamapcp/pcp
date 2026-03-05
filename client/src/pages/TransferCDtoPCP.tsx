@@ -195,7 +195,7 @@ export default function TransferCDtoPCP() {
       <div className="flex flex-col h-full">
         <div className="bg-card border-b-2 border-border p-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => { setMode('list'); setSelectedTransfer(null); }} className="p-2 hover:bg-secondary rounded-lg touch-target">
+            <button onClick={() => { setMode('list'); setSelectedTransfer(null); setConfirmNotes(''); }} className="p-2 hover:bg-secondary rounded-lg touch-target">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div>
