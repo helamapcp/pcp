@@ -121,6 +121,9 @@ export function useProductionOrders() {
       difference_kg: number;
       package_type: string;
       package_weight: number;
+      justification?: string | null;
+      pmp_excess_used_kg?: number;
+      new_excess_kg?: number;
     }>;
   }) => {
     const { data, error } = await supabase.rpc('confirm_production', {
