@@ -190,15 +190,42 @@ export default function TransferCDtoPCP() {
     setSubmitting(false);
   };
 
+  const handleCancelTransfer = async () => {
+    if (!cancelTargetId) return;
+    setSubmitting(true);
+    try {
+      const { error } = await cancelTransfer(cancelTargetId, user.id, user.fullName, cancelReason);
+      if (error) throw error;
+      toast.success('Transferência cancelada com sucesso.', { duration: 4000 });
+      setCancelDialogOpen(false);
+      setCancelTargetId(null);
+      setCancelReason('');
+      setMode('list');
+      setSelectedTransfer(null);
+      setConfirmItems([]);
+      await refetchTransfers();
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || err));
+    }
+    setSubmitting(false);
+  };
+
+  const openCancelDialog = (transferId: string) => {
+    setCancelTargetId(transferId);
+    setCancelReason('');
+    setCancelDialogOpen(true);
+  };
+
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       exact: 'bg-industrial-success/20 text-industrial-success',
       below: 'bg-industrial-warning/20 text-industrial-warning',
       above: 'bg-primary/20 text-primary',
       pending: 'bg-secondary text-secondary-foreground',
+      cancelled: 'bg-destructive/20 text-destructive',
     };
     const labels: Record<string, string> = {
-      exact: 'Exato', below: 'Abaixo', above: 'Acima', pending: 'Pendente',
+      exact: 'Exato', below: 'Abaixo', above: 'Acima', pending: 'Pendente', cancelled: 'Cancelada',
     };
     return (
       <span className={`px-2 py-1 rounded text-xs font-bold ${styles[status] || styles.pending}`}>
