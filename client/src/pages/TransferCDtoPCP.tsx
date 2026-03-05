@@ -278,6 +278,35 @@ export default function TransferCDtoPCP() {
             );
           })}
 
+          {/* Observation/reason when quantities differ */}
+          {(() => {
+            const hasDiff = confirmItems.some(item => {
+              const product = products.find(p => p.id === item.product_id);
+              const sentQty = parseFloat(sentQuantities[item.id] || '0');
+              const sentKg = product ? convertToKg(sentQty, item.sent_unit, product) : 0;
+              const requestedKg = product ? convertToKg(item.requested_quantity, item.requested_unit, product) : 0;
+              return sentQty > 0 && Math.abs(sentKg - requestedKg) / Math.max(requestedKg, 0.001) >= 0.01;
+            });
+
+            if (!hasDiff) return null;
+
+            return (
+              <div className="bg-card border-2 border-industrial-warning rounded-xl p-4 space-y-2">
+                <p className="text-foreground font-bold text-sm">⚠️ Divergência detectada</p>
+                <p className="text-muted-foreground text-xs">
+                  A quantidade enviada difere da solicitada. Informe o motivo abaixo (obrigatório).
+                </p>
+                <textarea
+                  value={confirmNotes}
+                  onChange={(e) => setConfirmNotes(e.target.value)}
+                  placeholder="Ex: Estoque insuficiente, embalagem avariada, erro na contagem..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-input border-2 border-border rounded-lg text-foreground text-sm placeholder-muted-foreground resize-none"
+                />
+              </div>
+            );
+          })()}
+
           <IndustrialButton size="lg" variant="success" fullWidth onClick={handleConfirmTransfer}
             disabled={submitting || confirmItems.some(i => !sentQuantities[i.id] || parseFloat(sentQuantities[i.id]) <= 0)}
             icon={<Check className="w-5 h-5" />}>
