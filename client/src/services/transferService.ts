@@ -87,3 +87,53 @@ export async function getTransferItems(transferId: string) {
     .eq('transfer_id', transferId);
   return { data, error };
 }
+
+/**
+ * Cancel a pending transfer request.
+ */
+export async function cancelTransfer(
+  transferId: string,
+  userId: string,
+  userName: string,
+  reason?: string
+) {
+  // Validate transfer is still pending
+  const { data: transfer, error: fetchError } = await supabase
+    .from('transfers')
+    .select('status')
+    .eq('id', transferId)
+    .single();
+
+  if (fetchError || !transfer) return { error: fetchError || new Error('Transferência não encontrada'), data: null };
+
+  if (transfer.status !== 'pending') {
+    return { error: new Error('Apenas transferências pendentes podem ser canceladas'), data: null };
+  }
+
+  const notes = reason?.trim()
+    ? `[CANCELADO por ${userName}] ${reason.trim()}`
+    : `[CANCELADO por ${userName}]`;
+
+  const { data, error } = await supabase
+    .from('transfers')
+    .update({
+      status: 'cancelled',
+      confirmed_by: userId,
+      confirmed_by_name: userName,
+      confirmed_at: new Date().toISOString(),
+      notes,
+    })
+    .eq('id', transferId)
+    .select()
+    .single();
+
+  if (error) return { error, data: null };
+
+  // Also mark all transfer items as cancelled
+  await supabase
+    .from('transfer_items')
+    .update({ status: 'cancelled' })
+    .eq('transfer_id', transferId);
+
+  return { data, error: null };
+}

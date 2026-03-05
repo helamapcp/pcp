@@ -8,10 +8,20 @@ import {
   convertToKg,
   type TransferItem,
 } from '@/hooks/useIndustrialData';
-import { createTransferRequest, confirmTransferRPC, getTransferItems as fetchTransferItems } from '@/services/transferService';
+import { createTransferRequest, confirmTransferRPC, getTransferItems as fetchTransferItems, cancelTransfer } from '@/services/transferService';
 import { IndustrialButton } from '@/components/IndustrialButton';
-import { ArrowLeft, Plus, Trash2, Check, ArrowRight, Package } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Check, ArrowRight, Package, X } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface TransferItemDraft {
   product_id: string;
