@@ -297,7 +297,7 @@ export default function TransferCDtoPCP() {
                   <div className="bg-secondary rounded-lg p-3">
                     <p className="text-muted-foreground text-xs font-bold">SOLICITADO</p>
                     <p className="text-foreground text-lg font-black">{item.requested_quantity} {item.requested_unit === 'units' ? 'und' : 'kg'}</p>
-                    <p className="text-muted-foreground text-xs">{requestedKg.toFixed(1)} kg</p>
+                    <p className="text-muted-foreground text-xs">{requestedKg.toFixed(2)} kg</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs font-bold mb-1">ENVIADO</p>
