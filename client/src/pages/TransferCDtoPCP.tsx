@@ -483,7 +483,7 @@ export default function TransferCDtoPCP() {
                           <span className="text-primary text-xs ml-2">Saco {p.package_weight}kg</span>
                         )}
                       </div>
-                      <span className="text-muted-foreground text-xs">{Number(cdStock?.total_kg || 0).toFixed(1)} kg</span>
+                      <span className="text-muted-foreground text-xs">{Number(cdStock?.total_kg || 0).toFixed(2)} kg</span>
                     </button>
                   );
                 })}
