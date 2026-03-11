@@ -378,7 +378,7 @@ export default function ProductionPlanningPage() {
           />
           {selectedFormulation && batches && (
             <p className="text-muted-foreground text-xs mt-1">
-              Total: {(parseInt(batches) * selectedFormulation.weight_per_batch).toFixed(1)} kg
+              Total: {(parseInt(batches) * selectedFormulation.weight_per_batch).toFixed(2)} kg
               ({selectedFormulation.weight_per_batch} kg/batida)
             </p>
           )}
