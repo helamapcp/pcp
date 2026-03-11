@@ -192,10 +192,10 @@ export default function ProductionPlanningPage() {
                       {ing.bags_required > 0 ? (
                         <>
                           <p className="text-primary font-black text-lg">{ing.bags_required} sacos</p>
-                          <p className="text-muted-foreground text-xs">{ing.bags_kg.toFixed(1)} kg</p>
+                          <p className="text-muted-foreground text-xs">{ing.bags_kg.toFixed(2)} kg</p>
                         </>
                       ) : (
-                        <p className="text-foreground font-black text-lg">{ing.ideal_kg.toFixed(1)} kg</p>
+                        <p className="text-foreground font-black text-lg">{ing.ideal_kg.toFixed(2)} kg</p>
                       )}
                     </div>
                   </div>
