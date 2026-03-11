@@ -169,7 +169,7 @@ export default function ProductionSchedulePage() {
               <div key={s.product_id} className="px-4 py-2 flex justify-between">
                 <span className="text-foreground text-sm">{s.product_name}</span>
                 <span className={`font-bold text-sm ${s.projected_kg < 0 ? 'text-destructive' : 'text-foreground'}`}>
-                  {s.projected_kg.toFixed(1)} kg
+                  {s.projected_kg.toFixed(2)} kg
                 </span>
               </div>
             ))}

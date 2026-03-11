@@ -53,10 +53,10 @@ export default function ExecutiveDashboard() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard icon={Package} iconColor="text-primary" label="Estoque Total" value={`${(totalStockKg / 1000).toFixed(1)}t`} sub={`${totalStockKg.toLocaleString()} kg`} />
-        <KPICard icon={Factory} iconColor="text-industrial-success" label="Total Produzido" value={`${(totalProducedKg / 1000).toFixed(1)}t`} sub={`${confirmedOrders} ordens`} />
+        <KPICard icon={Package} iconColor="text-primary" label="Estoque Total" value={`${(totalStockKg / 1000).toFixed(2)}t`} sub={`${totalStockKg.toLocaleString()} kg`} />
+        <KPICard icon={Factory} iconColor="text-industrial-success" label="Total Produzido" value={`${(totalProducedKg / 1000).toFixed(2)}t`} sub={`${confirmedOrders} ordens`} />
         <KPICard icon={Truck} iconColor="text-chart-1" label="Transferências" value={String(completedTransfers)} sub={`${pendingTransfers} pendentes`} />
-        <KPICard icon={AlertTriangle} iconColor="text-industrial-warning" label="Perda Arredond." value={`${totalRoundingLoss.toFixed(1)} kg`} sub="sealed_bag" />
+        <KPICard icon={AlertTriangle} iconColor="text-industrial-warning" label="Perda Arredond." value={`${totalRoundingLoss.toFixed(2)} kg`} sub="sealed_bag" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

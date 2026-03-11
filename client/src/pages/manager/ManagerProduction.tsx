@@ -19,7 +19,7 @@ export default function ManagerProduction() {
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-foreground font-bold">{po.final_product} • {po.machine || 'Sem misturador'}</p>
-                <p className="text-muted-foreground text-xs">{po.batches} batidas × {po.weight_per_batch}kg = {Number(po.total_compound_kg).toFixed(1)}kg</p>
+                <p className="text-muted-foreground text-xs">{po.batches} batidas × {po.weight_per_batch}kg = {Number(po.total_compound_kg).toFixed(2)}kg</p>
                 <p className="text-muted-foreground text-xs mt-1">{po.created_by_name} • {new Date(po.created_at).toLocaleString('pt-BR')}</p>
               </div>
               <span className={`px-2 py-1 rounded text-xs font-bold ${po.status === 'confirmed' ? 'bg-industrial-success/20 text-industrial-success' : 'bg-industrial-warning/20 text-industrial-warning'}`}>

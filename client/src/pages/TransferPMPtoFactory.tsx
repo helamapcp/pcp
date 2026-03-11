@@ -211,7 +211,7 @@ export default function TransferPMPtoFactory() {
             <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
             <h2 className="text-foreground font-black text-2xl mb-2">Enviado para Fábrica!</h2>
             <p className="text-muted-foreground">
-              {transferredCount} sacas • {transferredKg.toFixed(1)} kg
+              {transferredCount} sacas • {transferredKg.toFixed(2)} kg
             </p>
             <p className="text-muted-foreground text-xs mt-2">
               ✅ Transferência PMP→Fábrica • Rastreabilidade por sacas

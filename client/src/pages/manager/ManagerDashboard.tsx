@@ -116,8 +116,8 @@ export default function ManagerDashboard() {
                 return (
                   <tr key={product.id} className="hover:bg-secondary/50 transition-colors">
                     <td className="px-4 py-3 text-foreground font-semibold text-sm">{product.name}</td>
-                    {LOCATIONS.map(loc => { const s = getStock(product.id, loc); return <td key={loc} className="px-4 py-3 text-right text-foreground font-bold">{s ? `${Number(s.total_kg).toFixed(1)} kg` : '-'}</td>; })}
-                    <td className="px-4 py-3 text-right text-industrial-success font-black">{total.toFixed(1)} kg</td>
+                    {LOCATIONS.map(loc => { const s = getStock(product.id, loc); return <td key={loc} className="px-4 py-3 text-right text-foreground font-bold">{s ? `${Number(s.total_kg).toFixed(2)} kg` : '-'}</td>; })}
+                    <td className="px-4 py-3 text-right text-industrial-success font-black">{total.toFixed(2)} kg</td>
                   </tr>
                 );
               })}

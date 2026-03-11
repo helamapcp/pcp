@@ -44,7 +44,7 @@ export default function ManagerMovements() {
                     <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(m.created_at).toLocaleString('pt-BR')}</td>
                     <td className="px-4 py-3"><span className={`px-2 py-1 rounded text-xs font-bold ${movementTypeColor(m.movement_type)}`}>{movementTypeLabel(m.movement_type)}</span></td>
                     <td className="px-4 py-3 text-foreground font-bold text-sm">{m.location_code}</td>
-                    <td className="px-4 py-3 text-right text-foreground font-bold">{Number(m.total_kg).toFixed(1)}</td>
+                    <td className="px-4 py-3 text-right text-foreground font-bold">{Number(m.total_kg).toFixed(2)}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs truncate max-w-[200px]">{m.notes}</td>
                     <td className="px-4 py-3 text-foreground text-sm">{m.user_name}</td>
                   </tr>

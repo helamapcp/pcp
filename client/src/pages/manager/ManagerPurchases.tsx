@@ -77,7 +77,7 @@ export default function ManagerPurchases() {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-foreground font-bold text-sm">{product?.name || 'Produto'}</p>
-                    <p className="text-muted-foreground text-xs">{Number(s.suggested_purchase_kg).toFixed(1)} kg</p>
+                    <p className="text-muted-foreground text-xs">{Number(s.suggested_purchase_kg).toFixed(2)} kg</p>
                   </div>
                   <span className="px-2 py-1 rounded text-xs font-bold bg-industrial-success/20 text-industrial-success">Resolvida</span>
                 </div>

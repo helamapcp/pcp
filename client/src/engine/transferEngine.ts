@@ -32,7 +32,7 @@ export function validateTransferItems(
       errors.push(`${item.product_name}: quantidade deve ser positiva`);
     }
     if (item.equivalent_kg > item.available_kg) {
-      errors.push(`${item.product_name}: estoque insuficiente (${item.available_kg.toFixed(1)}kg disponível, ${item.equivalent_kg.toFixed(1)}kg necessário)`);
+      errors.push(`${item.product_name}: estoque insuficiente (${item.available_kg.toFixed(2)}kg disponível, ${item.equivalent_kg.toFixed(2)}kg necessário)`);
     }
   });
 

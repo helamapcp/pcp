@@ -190,7 +190,7 @@ export default function ManagerPlanning() {
                   <div>
                     <p className="text-foreground font-bold">{form?.name || 'Formulação'}</p>
                     <p className="text-muted-foreground text-xs">
-                      {mixer?.name || 'Misturador'} • {p.batches} batidas • {Number(p.total_weight_kg).toFixed(1)} kg
+                      {mixer?.name || 'Misturador'} • {p.batches} batidas • {Number(p.total_weight_kg).toFixed(2)} kg
                     </p>
                     <p className="text-muted-foreground text-xs mt-1">
                       📅 {new Date(p.production_date + 'T12:00:00').toLocaleDateString('pt-BR')}

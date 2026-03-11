@@ -421,7 +421,7 @@ export default function ProductionPlanningPage() {
                     {product?.name || fi.product_id}
                     {insufficient && ' ❌'}
                   </span>
-                  <span className="text-foreground font-bold">{idealKg.toFixed(1)} kg</span>
+                  <span className="text-foreground font-bold">{idealKg.toFixed(2)} kg</span>
                 </div>
               );
             })}

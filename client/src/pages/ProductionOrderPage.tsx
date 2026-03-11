@@ -536,7 +536,7 @@ export default function ProductionOrderPage() {
             <p className="text-muted-foreground">
               {summary.formulation.name} • {selectedMixer?.name || 'Sem misturador'} • {summary.batches} batidas
             </p>
-            <p className="text-foreground font-bold text-lg mt-2">{summary.total_compound_kg.toFixed(1)} kg</p>
+            <p className="text-foreground font-bold text-lg mt-2">{summary.total_compound_kg.toFixed(2)} kg</p>
             {summary.total_new_excess_kg > 0 && (
               <p className="text-amber-500 text-sm mt-1">
                 <Recycle className="w-4 h-4 inline mr-1" />

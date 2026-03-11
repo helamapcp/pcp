@@ -510,7 +510,7 @@ export default function TransferCDtoPCP() {
                     return (
                       <div key={idx} className="flex justify-between text-sm">
                         <span className="text-foreground">{product?.name}</span>
-                        <span className="text-foreground font-bold">{qty} {item.requested_unit === 'units' ? 'und' : 'kg'} ({kg.toFixed(1)} kg)</span>
+                        <span className="text-foreground font-bold">{qty} {item.requested_unit === 'units' ? 'und' : 'kg'} ({kg.toFixed(2)} kg)</span>
                       </div>
                     );
                   })}

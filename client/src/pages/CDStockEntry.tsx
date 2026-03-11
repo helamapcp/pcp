@@ -247,7 +247,7 @@ export default function CDStockEntry() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-foreground font-black">{Number(stock?.total_kg || 0).toFixed(1)}</p>
+                    <p className="text-foreground font-black">{Number(stock?.total_kg || 0).toFixed(2)}</p>
                     <p className="text-muted-foreground text-xs">kg em CD</p>
                   </div>
                 </button>
