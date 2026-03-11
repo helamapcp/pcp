@@ -239,7 +239,7 @@ export default function ProductionPlanningPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-destructive font-black">{s.suggested_purchase_kg.toFixed(1)} kg</p>
+                      <p className="text-destructive font-black">{s.suggested_purchase_kg.toFixed(2)} kg</p>
                       <p className="text-muted-foreground text-xs">a comprar</p>
                     </div>
                   </div>
