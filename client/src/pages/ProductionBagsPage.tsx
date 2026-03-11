@@ -114,7 +114,7 @@ export default function ProductionBagsPage() {
                         <p className="text-muted-foreground text-xs">{form?.name || 'Formulação'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-primary font-bold text-sm">{Number(b.weight_kg).toFixed(1)} kg</p>
+                        <p className="text-primary font-bold text-sm">{Number(b.weight_kg).toFixed(2)} kg</p>
                         <p className="text-muted-foreground text-xs">{new Date(b.created_at).toLocaleDateString('pt-BR')}</p>
                       </div>
                     </div>
