@@ -154,7 +154,7 @@ export default function ProductionPlanningPage() {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Peso Total</p>
-                <p className="text-foreground font-black text-lg">{simulation.total_weight_kg.toFixed(1)} kg</p>
+                <p className="text-foreground font-black text-lg">{simulation.total_weight_kg.toFixed(2)} kg</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Data</p>
