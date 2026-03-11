@@ -316,7 +316,7 @@ export default function TransferCDtoPCP() {
                   <div className="flex justify-between items-center">
                     <p className="text-muted-foreground text-xs">
                       Diferença: <span className={sentKg >= requestedKg ? 'text-industrial-success' : 'text-industrial-warning'}>
-                        {sentKg >= requestedKg ? '+' : ''}{(sentKg - requestedKg).toFixed(1)} kg
+                        {sentKg >= requestedKg ? '+' : ''}{(sentKg - requestedKg).toFixed(2)} kg
                       </span>
                     </p>
                     {getStatusBadge(
