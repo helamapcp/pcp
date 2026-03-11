@@ -187,7 +187,7 @@ export default function CDStockEntry() {
               />
               {parsedQty > 0 && unit === 'units' && (
                 <p className="text-muted-foreground text-sm mt-2 text-center">
-                  = {totalKg.toFixed(1)} kg
+                  = {totalKg.toFixed(2)} kg
                   {product.package_type === 'sealed_bag' && product.package_weight > 0 && (
                     <span className="text-primary"> ({parsedQty} × {product.package_weight}kg)</span>
                   )}
