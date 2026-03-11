@@ -87,7 +87,7 @@ export default function ProductionBagsPage() {
               <div className="bg-secondary rounded-lg p-3 border border-border">
                 <p className="text-foreground text-sm font-bold">Resumo</p>
                 <p className="text-muted-foreground text-xs mt-1">
-                  {count} sacas × {weight} kg = <span className="text-primary font-bold">{(count * weight).toFixed(1)} kg total</span>
+                  {count} sacas × {weight} kg = <span className="text-primary font-bold">{(count * weight).toFixed(2)} kg total</span>
                 </p>
               </div>
             )}
