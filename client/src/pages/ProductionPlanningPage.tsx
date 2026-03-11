@@ -295,7 +295,7 @@ export default function ProductionPlanningPage() {
                   <div>
                     <p className="text-foreground font-bold">{form?.name || 'Formulação'} • {mixer?.name || 'Mixer'}</p>
                     <p className="text-muted-foreground text-xs">
-                      {s.batches} batidas • {Number(s.total_weight_kg).toFixed(1)} kg
+                      {s.batches} batidas • {Number(s.total_weight_kg).toFixed(2)} kg
                     </p>
                     <p className="text-muted-foreground text-xs">
                       <Calendar className="w-3 h-3 inline mr-1" />
