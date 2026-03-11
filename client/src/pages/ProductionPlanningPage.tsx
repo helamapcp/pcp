@@ -163,7 +163,7 @@ export default function ProductionPlanningPage() {
               <div>
                 <p className="text-muted-foreground text-xs">Capacidade</p>
                 <p className={`font-bold ${simulation.capacity_usage_percent > 100 ? 'text-destructive' : simulation.capacity_usage_percent > 80 ? 'text-industrial-warning' : 'text-industrial-success'}`}>
-                  {simulation.capacity_usage_percent.toFixed(0)}%
+                  {simulation.capacity_usage_percent.toFixed(2)}%
                 </p>
               </div>
             </div>
