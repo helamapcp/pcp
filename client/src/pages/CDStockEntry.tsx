@@ -48,7 +48,7 @@ export default function CDStockEntry() {
       await refetchStock();
 
       toast.success(
-        `✓ Entrada Registrada\n${product.name}\n${parsedQty} ${unit === 'units' ? 'unidades' : 'kg'} (${resultKg.toFixed ? resultKg.toFixed(1) : resultKg} kg)`,
+        `✓ Entrada Registrada\n${product.name}\n${parsedQty} ${unit === 'units' ? 'unidades' : 'kg'} (${resultKg.toFixed ? resultKg.toFixed(2) : resultKg} kg)`,
         { duration: 4000 }
       );
 
