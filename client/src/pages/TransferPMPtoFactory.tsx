@@ -107,7 +107,7 @@ export default function TransferPMPtoFactory() {
           total_kg: kg,
           reference_type: 'transfer',
           reference_id: transfer.id,
-          notes: `Recebimento Fábrica: ${selectedBags.length} sacas (${kg.toFixed(1)} kg)`,
+          notes: `Recebimento Fábrica: ${selectedBags.length} sacas (${kg.toFixed(2)} kg)`,
           user_id: user.id,
           user_name: user.fullName,
         });
