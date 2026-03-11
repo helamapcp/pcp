@@ -308,7 +308,7 @@ export default function TransferCDtoPCP() {
                       onChange={(e) => setSentQuantities({ ...sentQuantities, [item.id]: e.target.value })}
                       className="w-full px-3 py-2 bg-input border-2 border-border rounded-lg text-foreground text-lg font-black text-center touch-target"
                     />
-                    <p className="text-muted-foreground text-xs mt-1 text-center">{sentKg.toFixed(1)} kg</p>
+                    <p className="text-muted-foreground text-xs mt-1 text-center">{sentKg.toFixed(2)} kg</p>
                   </div>
                 </div>
 
