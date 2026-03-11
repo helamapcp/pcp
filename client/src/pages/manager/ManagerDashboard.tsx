@@ -87,7 +87,7 @@ export default function ManagerDashboard() {
           <div className="flex items-center gap-2 mb-3"><Factory className="w-4 h-4 text-primary" /><p className="text-foreground font-bold text-sm">Consumo por Misturador</p></div>
           {consumptionByMachine.length === 0 ? <p className="text-muted-foreground text-sm">Sem dados</p> : (
             <div className="space-y-2">{consumptionByMachine.slice(0, 4).map(([machine, kg]) => (
-              <div key={machine} className="flex justify-between items-center"><span className="text-foreground text-sm font-semibold">{machine}</span><span className="text-primary font-black text-sm">{(kg / 1000).toFixed(1)}t</span></div>
+              <div key={machine} className="flex justify-between items-center"><span className="text-foreground text-sm font-semibold">{machine}</span><span className="text-primary font-black text-sm">{(kg / 1000).toFixed(2)}t</span></div>
             ))}</div>
           )}
         </div>
