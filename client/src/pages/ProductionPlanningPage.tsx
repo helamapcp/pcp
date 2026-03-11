@@ -201,7 +201,7 @@ export default function ProductionPlanningPage() {
                   </div>
                   {ing.excess_kg > 0 && (
                     <p className="text-industrial-warning text-xs mt-1">
-                      ⚠️ Excedente: +{ing.excess_kg.toFixed(1)} kg (arredondamento de sacos)
+                      ⚠️ Excedente: +{ing.excess_kg.toFixed(2)} kg (arredondamento de sacos)
                     </p>
                   )}
                   {hasShortage && (
