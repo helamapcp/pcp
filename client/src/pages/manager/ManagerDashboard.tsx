@@ -56,7 +56,7 @@ export default function ManagerDashboard() {
           return (
             <div key={loc} className="bg-card border rounded-xl p-6">
               <p className="text-muted-foreground text-xs font-bold mb-2">{loc}</p>
-              <p className="text-foreground text-2xl md:text-3xl font-black">{(totalKg / 1000).toFixed(1)}t</p>
+              <p className="text-foreground text-2xl md:text-3xl font-black">{(totalKg / 1000).toFixed(2)}t</p>
               <p className="text-muted-foreground text-xs mt-1">{totalKg.toLocaleString()} kg</p>
             </div>
           );
