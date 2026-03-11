@@ -68,7 +68,7 @@ export default function TransferPMPtoFactory() {
           confirmed_by: user.id,
           confirmed_by_name: user.fullName,
           confirmed_at: new Date().toISOString(),
-          notes: `Envio Fábrica: ${selectedBags.length} sacas (${totalKg.toFixed(1)} kg)`,
+          notes: `Envio Fábrica: ${selectedBags.length} sacas (${totalKg.toFixed(2)} kg)`,
         })
         .select()
         .single();
