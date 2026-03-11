@@ -371,7 +371,7 @@ export default function ProductionOrderPage() {
                 )}
               </div>
               <div className="text-right">
-                <p className="text-foreground text-2xl font-black">{summary.total_compound_kg.toFixed(1)}</p>
+                <p className="text-foreground text-2xl font-black">{summary.total_compound_kg.toFixed(2)}</p>
                 <p className="text-muted-foreground text-xs">kg composto</p>
                 {summary.total_new_excess_kg > 0 && (
                   <p className="text-amber-500 text-xs font-bold mt-1">
