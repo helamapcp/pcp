@@ -215,7 +215,7 @@ export default function ProductionOrderPage() {
                       <div>
                         <p className="text-foreground font-bold">{form?.name || 'Formulação'}</p>
                         <p className="text-muted-foreground text-xs">
-                          {mixer?.name || 'Misturador'} • {p.batches} batidas • {Number(p.total_weight_kg).toFixed(1)} kg
+                          {mixer?.name || 'Misturador'} • {p.batches} batidas • {Number(p.total_weight_kg).toFixed(2)} kg
                         </p>
                         {p.created_by_name && (
                           <p className="text-muted-foreground text-xs mt-1">Planejado por: {p.created_by_name}</p>
