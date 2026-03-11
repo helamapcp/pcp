@@ -408,7 +408,7 @@ export default function TransferCDtoPCP() {
                   <div>
                     <p className="text-foreground font-bold">{product?.name}</p>
                     <p className="text-muted-foreground text-xs">
-                      CD: {Number(cdStock?.total_kg || 0).toFixed(1)} kg disponível
+                      CD: {Number(cdStock?.total_kg || 0).toFixed(2)} kg disponível
                     </p>
                     {product?.package_type === 'sealed_bag' && (
                       <p className="text-primary text-xs font-bold">Saco {product.package_weight}kg</p>
