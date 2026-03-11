@@ -137,7 +137,7 @@ export default function ProductionSchedulePage() {
                     <div>
                       <p className="text-foreground font-bold">{form?.name || 'Formulação'}</p>
                       <p className="text-muted-foreground text-xs">
-                        {mixer?.name} • {s.batches} batidas • {Number(s.total_weight_kg).toFixed(1)} kg
+                        {mixer?.name} • {s.batches} batidas • {Number(s.total_weight_kg).toFixed(2)} kg
                       </p>
                     </div>
                     <div className="text-right">
