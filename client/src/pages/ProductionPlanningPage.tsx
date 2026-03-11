@@ -154,7 +154,7 @@ export default function ProductionPlanningPage() {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Peso Total</p>
-                <p className="text-foreground font-black text-lg">{simulation.total_weight_kg.toFixed(1)} kg</p>
+                <p className="text-foreground font-black text-lg">{simulation.total_weight_kg.toFixed(2)} kg</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Data</p>
@@ -163,7 +163,7 @@ export default function ProductionPlanningPage() {
               <div>
                 <p className="text-muted-foreground text-xs">Capacidade</p>
                 <p className={`font-bold ${simulation.capacity_usage_percent > 100 ? 'text-destructive' : simulation.capacity_usage_percent > 80 ? 'text-industrial-warning' : 'text-industrial-success'}`}>
-                  {simulation.capacity_usage_percent.toFixed(0)}%
+                  {simulation.capacity_usage_percent.toFixed(2)}%
                 </p>
               </div>
             </div>
@@ -182,9 +182,9 @@ export default function ProductionPlanningPage() {
                     <div>
                       <p className="text-foreground font-bold text-sm">{ing.product_name}</p>
                       <p className="text-muted-foreground text-xs">
-                        Ideal: {ing.ideal_kg.toFixed(1)} kg
+                        Ideal: {ing.ideal_kg.toFixed(2)} kg
                         {ing.reused_excess_kg > 0 && (
-                          <span className="text-industrial-success"> • Reuso: -{ing.reused_excess_kg.toFixed(1)} kg</span>
+                          <span className="text-industrial-success"> • Reuso: -{ing.reused_excess_kg.toFixed(2)} kg</span>
                         )}
                       </p>
                     </div>
@@ -192,16 +192,16 @@ export default function ProductionPlanningPage() {
                       {ing.bags_required > 0 ? (
                         <>
                           <p className="text-primary font-black text-lg">{ing.bags_required} sacos</p>
-                          <p className="text-muted-foreground text-xs">{ing.bags_kg.toFixed(1)} kg</p>
+                          <p className="text-muted-foreground text-xs">{ing.bags_kg.toFixed(2)} kg</p>
                         </>
                       ) : (
-                        <p className="text-foreground font-black text-lg">{ing.ideal_kg.toFixed(1)} kg</p>
+                        <p className="text-foreground font-black text-lg">{ing.ideal_kg.toFixed(2)} kg</p>
                       )}
                     </div>
                   </div>
                   {ing.excess_kg > 0 && (
                     <p className="text-industrial-warning text-xs mt-1">
-                      ⚠️ Excedente: +{ing.excess_kg.toFixed(1)} kg (arredondamento de sacos)
+                      ⚠️ Excedente: +{ing.excess_kg.toFixed(2)} kg (arredondamento de sacos)
                     </p>
                   )}
                   {hasShortage && (
@@ -218,7 +218,7 @@ export default function ProductionPlanningPage() {
           {simulation.total_excess_kg > 0 && (
             <div className="bg-industrial-warning/10 border-2 border-industrial-warning rounded-xl p-4">
               <p className="text-foreground font-bold text-sm">Excedente Total por Arredondamento</p>
-              <p className="text-industrial-warning font-black text-xl">{simulation.total_excess_kg.toFixed(1)} kg</p>
+              <p className="text-industrial-warning font-black text-xl">{simulation.total_excess_kg.toFixed(2)} kg</p>
               <p className="text-muted-foreground text-xs">Será registrado como estoque excedente no PMP</p>
             </div>
           )}
@@ -235,11 +235,11 @@ export default function ProductionPlanningPage() {
                     <div>
                       <p className="text-foreground font-bold text-sm">{s.product_name}</p>
                       <p className="text-muted-foreground text-xs">
-                        Disponível: {s.available_kg.toFixed(1)} kg • Necessário: {s.required_kg.toFixed(1)} kg
+                        Disponível: {s.available_kg.toFixed(2)} kg • Necessário: {s.required_kg.toFixed(2)} kg
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-destructive font-black">{s.suggested_purchase_kg.toFixed(1)} kg</p>
+                      <p className="text-destructive font-black">{s.suggested_purchase_kg.toFixed(2)} kg</p>
                       <p className="text-muted-foreground text-xs">a comprar</p>
                     </div>
                   </div>
@@ -295,7 +295,7 @@ export default function ProductionPlanningPage() {
                   <div>
                     <p className="text-foreground font-bold">{form?.name || 'Formulação'} • {mixer?.name || 'Mixer'}</p>
                     <p className="text-muted-foreground text-xs">
-                      {s.batches} batidas • {Number(s.total_weight_kg).toFixed(1)} kg
+                      {s.batches} batidas • {Number(s.total_weight_kg).toFixed(2)} kg
                     </p>
                     <p className="text-muted-foreground text-xs">
                       <Calendar className="w-3 h-3 inline mr-1" />
@@ -378,7 +378,7 @@ export default function ProductionPlanningPage() {
           />
           {selectedFormulation && batches && (
             <p className="text-muted-foreground text-xs mt-1">
-              Total: {(parseInt(batches) * selectedFormulation.weight_per_batch).toFixed(1)} kg
+              Total: {(parseInt(batches) * selectedFormulation.weight_per_batch).toFixed(2)} kg
               ({selectedFormulation.weight_per_batch} kg/batida)
             </p>
           )}
@@ -421,7 +421,7 @@ export default function ProductionPlanningPage() {
                     {product?.name || fi.product_id}
                     {insufficient && ' ❌'}
                   </span>
-                  <span className="text-foreground font-bold">{idealKg.toFixed(1)} kg</span>
+                  <span className="text-foreground font-bold">{idealKg.toFixed(2)} kg</span>
                 </div>
               );
             })}

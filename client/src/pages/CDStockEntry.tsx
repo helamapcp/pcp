@@ -48,7 +48,7 @@ export default function CDStockEntry() {
       await refetchStock();
 
       toast.success(
-        `✓ Entrada Registrada\n${product.name}\n${parsedQty} ${unit === 'units' ? 'unidades' : 'kg'} (${resultKg.toFixed ? resultKg.toFixed(1) : resultKg} kg)`,
+        `✓ Entrada Registrada\n${product.name}\n${parsedQty} ${unit === 'units' ? 'unidades' : 'kg'} (${resultKg.toFixed ? resultKg.toFixed(2) : resultKg} kg)`,
         { duration: 4000 }
       );
 
@@ -88,14 +88,14 @@ export default function CDStockEntry() {
               </div>
               <div className="bg-secondary rounded-lg p-4">
                 <p className="text-muted-foreground text-xs font-bold">TOTAL KG (estimado)</p>
-                <p className="text-foreground text-2xl font-black">{totalKg.toFixed(1)}</p>
+                <p className="text-foreground text-2xl font-black">{totalKg.toFixed(2)}</p>
                 <p className="text-muted-foreground text-xs">quilogramas</p>
               </div>
             </div>
 
             <div className="bg-industrial-surface rounded-lg p-4 mt-4">
               <p className="text-muted-foreground text-xs font-bold">ESTOQUE CD APÓS ENTRADA</p>
-              <p className="text-industrial-success text-2xl font-black">{newStockKg.toFixed(1)} kg</p>
+              <p className="text-industrial-success text-2xl font-black">{newStockKg.toFixed(2)} kg</p>
             </div>
           </div>
 
@@ -137,7 +137,7 @@ export default function CDStockEntry() {
               </div>
               <div className="text-right">
                 <p className="text-muted-foreground text-xs font-bold">ESTOQUE ATUAL CD</p>
-                <p className="text-foreground text-xl font-black">{Number(currentStock?.total_kg || 0).toFixed(1)} kg</p>
+                <p className="text-foreground text-xl font-black">{Number(currentStock?.total_kg || 0).toFixed(2)} kg</p>
               </div>
             </div>
 
@@ -187,7 +187,7 @@ export default function CDStockEntry() {
               />
               {parsedQty > 0 && unit === 'units' && (
                 <p className="text-muted-foreground text-sm mt-2 text-center">
-                  = {totalKg.toFixed(1)} kg
+                  = {totalKg.toFixed(2)} kg
                   {product.package_type === 'sealed_bag' && product.package_weight > 0 && (
                     <span className="text-primary"> ({parsedQty} × {product.package_weight}kg)</span>
                   )}
@@ -247,7 +247,7 @@ export default function CDStockEntry() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-foreground font-black">{Number(stock?.total_kg || 0).toFixed(1)}</p>
+                    <p className="text-foreground font-black">{Number(stock?.total_kg || 0).toFixed(2)}</p>
                     <p className="text-muted-foreground text-xs">kg em CD</p>
                   </div>
                 </button>

@@ -103,11 +103,11 @@ export default function ProductionSchedulePage() {
                 <div>
                   <p className="text-foreground font-bold text-sm">{product?.name || 'Produto'}</p>
                   <p className="text-muted-foreground text-xs">
-                    Necessário: {Number(s.required_quantity_kg).toFixed(1)} kg • Disponível: {Number(s.available_stock_kg).toFixed(1)} kg
+                    Necessário: {Number(s.required_quantity_kg).toFixed(2)} kg • Disponível: {Number(s.available_stock_kg).toFixed(2)} kg
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-destructive font-black">{Number(s.suggested_purchase_kg).toFixed(1)} kg</p>
+                  <p className="text-destructive font-black">{Number(s.suggested_purchase_kg).toFixed(2)} kg</p>
                 </div>
               </div>
             );
@@ -137,7 +137,7 @@ export default function ProductionSchedulePage() {
                     <div>
                       <p className="text-foreground font-bold">{form?.name || 'Formulação'}</p>
                       <p className="text-muted-foreground text-xs">
-                        {mixer?.name} • {s.batches} batidas • {Number(s.total_weight_kg).toFixed(1)} kg
+                        {mixer?.name} • {s.batches} batidas • {Number(s.total_weight_kg).toFixed(2)} kg
                       </p>
                     </div>
                     <div className="text-right">
@@ -147,7 +147,7 @@ export default function ProductionSchedulePage() {
                         {s.status === 'confirmed' ? 'Confirmada' : 'Planejada'}
                       </span>
                       <p className={`text-xs mt-1 font-bold ${capacityUsage > 100 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {capacityUsage.toFixed(0)}% capacidade
+                        {capacityUsage.toFixed(2)}% capacidade
                       </p>
                     </div>
                   </div>
@@ -169,7 +169,7 @@ export default function ProductionSchedulePage() {
               <div key={s.product_id} className="px-4 py-2 flex justify-between">
                 <span className="text-foreground text-sm">{s.product_name}</span>
                 <span className={`font-bold text-sm ${s.projected_kg < 0 ? 'text-destructive' : 'text-foreground'}`}>
-                  {s.projected_kg.toFixed(1)} kg
+                  {s.projected_kg.toFixed(2)} kg
                 </span>
               </div>
             ))}

@@ -56,7 +56,7 @@ export default function ManagerDashboard() {
           return (
             <div key={loc} className="bg-card border rounded-xl p-6">
               <p className="text-muted-foreground text-xs font-bold mb-2">{loc}</p>
-              <p className="text-foreground text-2xl md:text-3xl font-black">{(totalKg / 1000).toFixed(1)}t</p>
+              <p className="text-foreground text-2xl md:text-3xl font-black">{(totalKg / 1000).toFixed(2)}t</p>
               <p className="text-muted-foreground text-xs mt-1">{totalKg.toLocaleString()} kg</p>
             </div>
           );
@@ -87,7 +87,7 @@ export default function ManagerDashboard() {
           <div className="flex items-center gap-2 mb-3"><Factory className="w-4 h-4 text-primary" /><p className="text-foreground font-bold text-sm">Consumo por Misturador</p></div>
           {consumptionByMachine.length === 0 ? <p className="text-muted-foreground text-sm">Sem dados</p> : (
             <div className="space-y-2">{consumptionByMachine.slice(0, 4).map(([machine, kg]) => (
-              <div key={machine} className="flex justify-between items-center"><span className="text-foreground text-sm font-semibold">{machine}</span><span className="text-primary font-black text-sm">{(kg / 1000).toFixed(1)}t</span></div>
+              <div key={machine} className="flex justify-between items-center"><span className="text-foreground text-sm font-semibold">{machine}</span><span className="text-primary font-black text-sm">{(kg / 1000).toFixed(2)}t</span></div>
             ))}</div>
           )}
         </div>
@@ -116,8 +116,8 @@ export default function ManagerDashboard() {
                 return (
                   <tr key={product.id} className="hover:bg-secondary/50 transition-colors">
                     <td className="px-4 py-3 text-foreground font-semibold text-sm">{product.name}</td>
-                    {LOCATIONS.map(loc => { const s = getStock(product.id, loc); return <td key={loc} className="px-4 py-3 text-right text-foreground font-bold">{s ? `${Number(s.total_kg).toFixed(1)} kg` : '-'}</td>; })}
-                    <td className="px-4 py-3 text-right text-industrial-success font-black">{total.toFixed(1)} kg</td>
+                    {LOCATIONS.map(loc => { const s = getStock(product.id, loc); return <td key={loc} className="px-4 py-3 text-right text-foreground font-bold">{s ? `${Number(s.total_kg).toFixed(2)} kg` : '-'}</td>; })}
+                    <td className="px-4 py-3 text-right text-industrial-success font-black">{total.toFixed(2)} kg</td>
                   </tr>
                 );
               })}

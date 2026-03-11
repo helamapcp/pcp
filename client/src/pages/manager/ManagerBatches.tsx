@@ -22,7 +22,7 @@ export default function ManagerBatches() {
                   <div>
                     <p className="text-primary font-black text-sm">{b.batch_code || b.id.slice(0, 8)}</p>
                     <p className="text-foreground font-bold text-sm mt-1">{b.final_product} • {b.machine || 'Sem misturador'}</p>
-                    <p className="text-muted-foreground text-xs mt-1">{b.batches} batidas • {Number(b.total_compound_kg).toFixed(1)}kg</p>
+                    <p className="text-muted-foreground text-xs mt-1">{b.batches} batidas • {Number(b.total_compound_kg).toFixed(2)}kg</p>
                     <p className="text-muted-foreground text-xs">{b.produced_by_name} • {b.completed_at ? new Date(b.completed_at).toLocaleString('pt-BR') : ''}</p>
                   </div>
                   <span className={`px-2 py-1 rounded text-xs font-bold ${b.status === 'completed' ? 'bg-industrial-success/20 text-industrial-success' : 'bg-industrial-warning/20 text-industrial-warning'}`}>

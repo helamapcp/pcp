@@ -68,7 +68,7 @@ export default function TransferPMPtoFactory() {
           confirmed_by: user.id,
           confirmed_by_name: user.fullName,
           confirmed_at: new Date().toISOString(),
-          notes: `Envio Fábrica: ${selectedBags.length} sacas (${totalKg.toFixed(1)} kg)`,
+          notes: `Envio Fábrica: ${selectedBags.length} sacas (${totalKg.toFixed(2)} kg)`,
         })
         .select()
         .single();
@@ -92,7 +92,7 @@ export default function TransferPMPtoFactory() {
           total_kg: kg,
           reference_type: 'transfer',
           reference_id: transfer.id,
-          notes: `Saída PMP → Fábrica: ${selectedBags.length} sacas (${kg.toFixed(1)} kg)`,
+          notes: `Saída PMP → Fábrica: ${selectedBags.length} sacas (${kg.toFixed(2)} kg)`,
           user_id: user.id,
           user_name: user.fullName,
         });
@@ -107,7 +107,7 @@ export default function TransferPMPtoFactory() {
           total_kg: kg,
           reference_type: 'transfer',
           reference_id: transfer.id,
-          notes: `Recebimento Fábrica: ${selectedBags.length} sacas (${kg.toFixed(1)} kg)`,
+          notes: `Recebimento Fábrica: ${selectedBags.length} sacas (${kg.toFixed(2)} kg)`,
           user_id: user.id,
           user_name: user.fullName,
         });
@@ -179,7 +179,7 @@ export default function TransferPMPtoFactory() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-primary font-bold text-sm">{Number(b.weight_kg).toFixed(1)} kg</p>
+                          <p className="text-primary font-bold text-sm">{Number(b.weight_kg).toFixed(2)} kg</p>
                           <p className="text-muted-foreground text-xs">{new Date(b.created_at).toLocaleDateString('pt-BR')}</p>
                         </div>
                       </button>
@@ -191,7 +191,7 @@ export default function TransferPMPtoFactory() {
                   <div className="bg-secondary rounded-lg p-3 border border-border mt-3">
                     <p className="text-foreground text-sm font-bold">Resumo da Transferência</p>
                     <p className="text-muted-foreground text-xs mt-1">
-                      {selectedBags.length} sacas • <span className="text-primary font-bold">{totalKg.toFixed(1)} kg total</span>
+                      {selectedBags.length} sacas • <span className="text-primary font-bold">{totalKg.toFixed(2)} kg total</span>
                     </p>
                   </div>
                 )}
@@ -211,7 +211,7 @@ export default function TransferPMPtoFactory() {
             <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
             <h2 className="text-foreground font-black text-2xl mb-2">Enviado para Fábrica!</h2>
             <p className="text-muted-foreground">
-              {transferredCount} sacas • {transferredKg.toFixed(1)} kg
+              {transferredCount} sacas • {transferredKg.toFixed(2)} kg
             </p>
             <p className="text-muted-foreground text-xs mt-2">
               ✅ Transferência PMP→Fábrica • Rastreabilidade por sacas

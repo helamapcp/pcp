@@ -215,7 +215,7 @@ export default function ProductionOrderPage() {
                       <div>
                         <p className="text-foreground font-bold">{form?.name || 'Formulação'}</p>
                         <p className="text-muted-foreground text-xs">
-                          {mixer?.name || 'Misturador'} • {p.batches} batidas • {Number(p.total_weight_kg).toFixed(1)} kg
+                          {mixer?.name || 'Misturador'} • {p.batches} batidas • {Number(p.total_weight_kg).toFixed(2)} kg
                         </p>
                         {p.created_by_name && (
                           <p className="text-muted-foreground text-xs mt-1">Planejado por: {p.created_by_name}</p>
@@ -330,7 +330,7 @@ export default function ProductionOrderPage() {
                 </p>
                 <p className="text-muted-foreground text-xs mt-1">
                   Peso/batida: {selectedFormulation.weight_per_batch} kg •
-                  Total: <span className="text-primary font-bold">{(batches * selectedFormulation.weight_per_batch).toFixed(1)} kg</span>
+                  Total: <span className="text-primary font-bold">{(batches * selectedFormulation.weight_per_batch).toFixed(2)} kg</span>
                 </p>
                 <p className="text-muted-foreground text-xs">Itens na formulação: {formulationItems.length}</p>
                 {selectedMixer && (
@@ -371,7 +371,7 @@ export default function ProductionOrderPage() {
                 )}
               </div>
               <div className="text-right">
-                <p className="text-foreground text-2xl font-black">{summary.total_compound_kg.toFixed(1)}</p>
+                <p className="text-foreground text-2xl font-black">{summary.total_compound_kg.toFixed(2)}</p>
                 <p className="text-muted-foreground text-xs">kg composto</p>
                 {summary.total_new_excess_kg > 0 && (
                   <p className="text-amber-500 text-xs font-bold mt-1">
@@ -536,7 +536,7 @@ export default function ProductionOrderPage() {
             <p className="text-muted-foreground">
               {summary.formulation.name} • {selectedMixer?.name || 'Sem misturador'} • {summary.batches} batidas
             </p>
-            <p className="text-foreground font-bold text-lg mt-2">{summary.total_compound_kg.toFixed(1)} kg</p>
+            <p className="text-foreground font-bold text-lg mt-2">{summary.total_compound_kg.toFixed(2)} kg</p>
             {summary.total_new_excess_kg > 0 && (
               <p className="text-amber-500 text-sm mt-1">
                 <Recycle className="w-4 h-4 inline mr-1" />

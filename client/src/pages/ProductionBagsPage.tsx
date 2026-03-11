@@ -87,7 +87,7 @@ export default function ProductionBagsPage() {
               <div className="bg-secondary rounded-lg p-3 border border-border">
                 <p className="text-foreground text-sm font-bold">Resumo</p>
                 <p className="text-muted-foreground text-xs mt-1">
-                  {count} sacas × {weight} kg = <span className="text-primary font-bold">{(count * weight).toFixed(1)} kg total</span>
+                  {count} sacas × {weight} kg = <span className="text-primary font-bold">{(count * weight).toFixed(2)} kg total</span>
                 </p>
               </div>
             )}
@@ -114,7 +114,7 @@ export default function ProductionBagsPage() {
                         <p className="text-muted-foreground text-xs">{form?.name || 'Formulação'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-primary font-bold text-sm">{Number(b.weight_kg).toFixed(1)} kg</p>
+                        <p className="text-primary font-bold text-sm">{Number(b.weight_kg).toFixed(2)} kg</p>
                         <p className="text-muted-foreground text-xs">{new Date(b.created_at).toLocaleDateString('pt-BR')}</p>
                       </div>
                     </div>
@@ -130,7 +130,7 @@ export default function ProductionBagsPage() {
             <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
             <h2 className="text-foreground font-black text-2xl mb-2">Sacas Registradas!</h2>
             <p className="text-muted-foreground">
-              {count} sacas × {weight} kg = {(count * weight).toFixed(1)} kg
+              {count} sacas × {weight} kg = {(count * weight).toFixed(2)} kg
             </p>
             <p className="text-muted-foreground text-xs mt-2">Local: PMP • Status: Disponível</p>
           </div>

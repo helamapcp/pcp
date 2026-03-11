@@ -30,7 +30,7 @@ export default function ManagerAudit() {
                   </div>
                 </div>
                 <span className={`px-2 py-1 rounded text-xs font-bold whitespace-nowrap ${movementTypeColor(m.movement_type)}`}>
-                  {m.location_code} • {Number(m.total_kg).toFixed(1)}kg
+                  {m.location_code} • {Number(m.total_kg).toFixed(2)}kg
                 </span>
               </div>
             </div>

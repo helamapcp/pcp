@@ -46,15 +46,15 @@ export default function ManagerPurchases() {
                   <div>
                     <p className="text-foreground font-bold">{product?.name || 'Produto'}</p>
                     <p className="text-muted-foreground text-xs">
-                      Necessário: {Number(s.required_quantity_kg).toFixed(1)} kg •
-                      Disponível: {Number(s.available_stock_kg).toFixed(1)} kg
+                      Necessário: {Number(s.required_quantity_kg).toFixed(2)} kg •
+                      Disponível: {Number(s.available_stock_kg).toFixed(2)} kg
                     </p>
                     <p className="text-muted-foreground text-xs">
                       {new Date(s.created_at).toLocaleString('pt-BR')}
                     </p>
                   </div>
                   <div className="text-right space-y-2">
-                    <p className="text-destructive font-black text-lg">{Number(s.suggested_purchase_kg).toFixed(1)} kg</p>
+                    <p className="text-destructive font-black text-lg">{Number(s.suggested_purchase_kg).toFixed(2)} kg</p>
                     <IndustrialButton size="sm" variant="success" onClick={() => handleResolve(s.id)}
                       icon={<Check className="w-3 h-3" />}>
                       Resolver
@@ -77,7 +77,7 @@ export default function ManagerPurchases() {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-foreground font-bold text-sm">{product?.name || 'Produto'}</p>
-                    <p className="text-muted-foreground text-xs">{Number(s.suggested_purchase_kg).toFixed(1)} kg</p>
+                    <p className="text-muted-foreground text-xs">{Number(s.suggested_purchase_kg).toFixed(2)} kg</p>
                   </div>
                   <span className="px-2 py-1 rounded text-xs font-bold bg-industrial-success/20 text-industrial-success">Resolvida</span>
                 </div>

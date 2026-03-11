@@ -128,7 +128,7 @@ export default function ManagerPlanning() {
               className="w-full mt-1 px-3 py-3 bg-input border-2 border-border rounded-lg text-foreground font-bold text-center text-2xl" />
             {selectedFormulation && batches > 0 && (
               <p className="text-muted-foreground text-xs mt-1">
-                Total: {(batches * selectedFormulation.weight_per_batch).toFixed(1)} kg
+                Total: {(batches * selectedFormulation.weight_per_batch).toFixed(2)} kg
               </p>
             )}
           </div>
@@ -190,7 +190,7 @@ export default function ManagerPlanning() {
                   <div>
                     <p className="text-foreground font-bold">{form?.name || 'Formulação'}</p>
                     <p className="text-muted-foreground text-xs">
-                      {mixer?.name || 'Misturador'} • {p.batches} batidas • {Number(p.total_weight_kg).toFixed(1)} kg
+                      {mixer?.name || 'Misturador'} • {p.batches} batidas • {Number(p.total_weight_kg).toFixed(2)} kg
                     </p>
                     <p className="text-muted-foreground text-xs mt-1">
                       📅 {new Date(p.production_date + 'T12:00:00').toLocaleDateString('pt-BR')}

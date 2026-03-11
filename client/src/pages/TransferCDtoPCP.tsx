@@ -99,7 +99,7 @@ export default function TransferCDtoPCP() {
       const availableKg = Number(cdStock?.total_kg || 0);
 
       if (sentKg > availableKg) {
-        toast.error(`Estoque insuficiente para ${product.name}. Disponível: ${availableKg.toFixed(1)} kg`);
+        toast.error(`Estoque insuficiente para ${product.name}. Disponível: ${availableKg.toFixed(2)} kg`);
         return;
       }
     }
@@ -289,7 +289,7 @@ export default function TransferCDtoPCP() {
                   </div>
                   <div className="text-right">
                     <p className="text-muted-foreground text-xs">CD disponível</p>
-                    <p className="text-foreground font-bold">{Number(cdStock?.total_kg || 0).toFixed(1)} kg</p>
+                    <p className="text-foreground font-bold">{Number(cdStock?.total_kg || 0).toFixed(2)} kg</p>
                   </div>
                 </div>
 
@@ -297,7 +297,7 @@ export default function TransferCDtoPCP() {
                   <div className="bg-secondary rounded-lg p-3">
                     <p className="text-muted-foreground text-xs font-bold">SOLICITADO</p>
                     <p className="text-foreground text-lg font-black">{item.requested_quantity} {item.requested_unit === 'units' ? 'und' : 'kg'}</p>
-                    <p className="text-muted-foreground text-xs">{requestedKg.toFixed(1)} kg</p>
+                    <p className="text-muted-foreground text-xs">{requestedKg.toFixed(2)} kg</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs font-bold mb-1">ENVIADO</p>
@@ -308,7 +308,7 @@ export default function TransferCDtoPCP() {
                       onChange={(e) => setSentQuantities({ ...sentQuantities, [item.id]: e.target.value })}
                       className="w-full px-3 py-2 bg-input border-2 border-border rounded-lg text-foreground text-lg font-black text-center touch-target"
                     />
-                    <p className="text-muted-foreground text-xs mt-1 text-center">{sentKg.toFixed(1)} kg</p>
+                    <p className="text-muted-foreground text-xs mt-1 text-center">{sentKg.toFixed(2)} kg</p>
                   </div>
                 </div>
 
@@ -316,7 +316,7 @@ export default function TransferCDtoPCP() {
                   <div className="flex justify-between items-center">
                     <p className="text-muted-foreground text-xs">
                       Diferença: <span className={sentKg >= requestedKg ? 'text-industrial-success' : 'text-industrial-warning'}>
-                        {sentKg >= requestedKg ? '+' : ''}{(sentKg - requestedKg).toFixed(1)} kg
+                        {sentKg >= requestedKg ? '+' : ''}{(sentKg - requestedKg).toFixed(2)} kg
                       </span>
                     </p>
                     {getStatusBadge(
@@ -408,7 +408,7 @@ export default function TransferCDtoPCP() {
                   <div>
                     <p className="text-foreground font-bold">{product?.name}</p>
                     <p className="text-muted-foreground text-xs">
-                      CD: {Number(cdStock?.total_kg || 0).toFixed(1)} kg disponível
+                      CD: {Number(cdStock?.total_kg || 0).toFixed(2)} kg disponível
                     </p>
                     {product?.package_type === 'sealed_bag' && (
                       <p className="text-primary text-xs font-bold">Saco {product.package_weight}kg</p>
@@ -448,7 +448,7 @@ export default function TransferCDtoPCP() {
 
                 {qty > 0 && (
                   <p className="text-muted-foreground text-xs text-center">
-                    Total: {sentKg.toFixed(1)} kg
+                    Total: {sentKg.toFixed(2)} kg
                     {product?.package_type === 'sealed_bag' && item.requested_unit === 'units' && (
                       <span className="text-primary"> ({qty} × {product.package_weight}kg)</span>
                     )}
@@ -483,7 +483,7 @@ export default function TransferCDtoPCP() {
                           <span className="text-primary text-xs ml-2">Saco {p.package_weight}kg</span>
                         )}
                       </div>
-                      <span className="text-muted-foreground text-xs">{Number(cdStock?.total_kg || 0).toFixed(1)} kg</span>
+                      <span className="text-muted-foreground text-xs">{Number(cdStock?.total_kg || 0).toFixed(2)} kg</span>
                     </button>
                   );
                 })}
@@ -510,7 +510,7 @@ export default function TransferCDtoPCP() {
                     return (
                       <div key={idx} className="flex justify-between text-sm">
                         <span className="text-foreground">{product?.name}</span>
-                        <span className="text-foreground font-bold">{qty} {item.requested_unit === 'units' ? 'und' : 'kg'} ({kg.toFixed(1)} kg)</span>
+                        <span className="text-foreground font-bold">{qty} {item.requested_unit === 'units' ? 'und' : 'kg'} ({kg.toFixed(2)} kg)</span>
                       </div>
                     );
                   })}
