@@ -182,9 +182,9 @@ export default function ProductionPlanningPage() {
                     <div>
                       <p className="text-foreground font-bold text-sm">{ing.product_name}</p>
                       <p className="text-muted-foreground text-xs">
-                        Ideal: {ing.ideal_kg.toFixed(1)} kg
+                        Ideal: {ing.ideal_kg.toFixed(2)} kg
                         {ing.reused_excess_kg > 0 && (
-                          <span className="text-industrial-success"> • Reuso: -{ing.reused_excess_kg.toFixed(1)} kg</span>
+                          <span className="text-industrial-success"> • Reuso: -{ing.reused_excess_kg.toFixed(2)} kg</span>
                         )}
                       </p>
                     </div>
