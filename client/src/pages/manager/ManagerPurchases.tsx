@@ -46,8 +46,8 @@ export default function ManagerPurchases() {
                   <div>
                     <p className="text-foreground font-bold">{product?.name || 'Produto'}</p>
                     <p className="text-muted-foreground text-xs">
-                      Necessário: {Number(s.required_quantity_kg).toFixed(1)} kg •
-                      Disponível: {Number(s.available_stock_kg).toFixed(1)} kg
+                      Necessário: {Number(s.required_quantity_kg).toFixed(2)} kg •
+                      Disponível: {Number(s.available_stock_kg).toFixed(2)} kg
                     </p>
                     <p className="text-muted-foreground text-xs">
                       {new Date(s.created_at).toLocaleString('pt-BR')}
