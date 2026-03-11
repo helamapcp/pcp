@@ -95,7 +95,7 @@ export default function CDStockEntry() {
 
             <div className="bg-industrial-surface rounded-lg p-4 mt-4">
               <p className="text-muted-foreground text-xs font-bold">ESTOQUE CD APÓS ENTRADA</p>
-              <p className="text-industrial-success text-2xl font-black">{newStockKg.toFixed(1)} kg</p>
+              <p className="text-industrial-success text-2xl font-black">{newStockKg.toFixed(2)} kg</p>
             </div>
           </div>
 
