@@ -103,7 +103,7 @@ export default function ProductionSchedulePage() {
                 <div>
                   <p className="text-foreground font-bold text-sm">{product?.name || 'Produto'}</p>
                   <p className="text-muted-foreground text-xs">
-                    Necessário: {Number(s.required_quantity_kg).toFixed(1)} kg • Disponível: {Number(s.available_stock_kg).toFixed(1)} kg
+                    Necessário: {Number(s.required_quantity_kg).toFixed(2)} kg • Disponível: {Number(s.available_stock_kg).toFixed(2)} kg
                   </p>
                 </div>
                 <div className="text-right">
