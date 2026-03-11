@@ -330,7 +330,7 @@ export default function ProductionOrderPage() {
                 </p>
                 <p className="text-muted-foreground text-xs mt-1">
                   Peso/batida: {selectedFormulation.weight_per_batch} kg •
-                  Total: <span className="text-primary font-bold">{(batches * selectedFormulation.weight_per_batch).toFixed(1)} kg</span>
+                  Total: <span className="text-primary font-bold">{(batches * selectedFormulation.weight_per_batch).toFixed(2)} kg</span>
                 </p>
                 <p className="text-muted-foreground text-xs">Itens na formulação: {formulationItems.length}</p>
                 {selectedMixer && (
