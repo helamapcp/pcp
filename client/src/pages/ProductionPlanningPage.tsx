@@ -218,7 +218,7 @@ export default function ProductionPlanningPage() {
           {simulation.total_excess_kg > 0 && (
             <div className="bg-industrial-warning/10 border-2 border-industrial-warning rounded-xl p-4">
               <p className="text-foreground font-bold text-sm">Excedente Total por Arredondamento</p>
-              <p className="text-industrial-warning font-black text-xl">{simulation.total_excess_kg.toFixed(1)} kg</p>
+              <p className="text-industrial-warning font-black text-xl">{simulation.total_excess_kg.toFixed(2)} kg</p>
               <p className="text-muted-foreground text-xs">Será registrado como estoque excedente no PMP</p>
             </div>
           )}
