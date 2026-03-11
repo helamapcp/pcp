@@ -137,7 +137,7 @@ export default function CDStockEntry() {
               </div>
               <div className="text-right">
                 <p className="text-muted-foreground text-xs font-bold">ESTOQUE ATUAL CD</p>
-                <p className="text-foreground text-xl font-black">{Number(currentStock?.total_kg || 0).toFixed(1)} kg</p>
+                <p className="text-foreground text-xl font-black">{Number(currentStock?.total_kg || 0).toFixed(2)} kg</p>
               </div>
             </div>
 
