@@ -107,7 +107,7 @@ export default function ProductionSchedulePage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-destructive font-black">{Number(s.suggested_purchase_kg).toFixed(1)} kg</p>
+                  <p className="text-destructive font-black">{Number(s.suggested_purchase_kg).toFixed(2)} kg</p>
                 </div>
               </div>
             );
