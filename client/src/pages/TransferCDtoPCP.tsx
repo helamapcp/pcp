@@ -99,7 +99,7 @@ export default function TransferCDtoPCP() {
       const availableKg = Number(cdStock?.total_kg || 0);
 
       if (sentKg > availableKg) {
-        toast.error(`Estoque insuficiente para ${product.name}. Disponível: ${availableKg.toFixed(1)} kg`);
+        toast.error(`Estoque insuficiente para ${product.name}. Disponível: ${availableKg.toFixed(2)} kg`);
         return;
       }
     }
