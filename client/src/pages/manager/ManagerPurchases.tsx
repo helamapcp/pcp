@@ -54,7 +54,7 @@ export default function ManagerPurchases() {
                     </p>
                   </div>
                   <div className="text-right space-y-2">
-                    <p className="text-destructive font-black text-lg">{Number(s.suggested_purchase_kg).toFixed(1)} kg</p>
+                    <p className="text-destructive font-black text-lg">{Number(s.suggested_purchase_kg).toFixed(2)} kg</p>
                     <IndustrialButton size="sm" variant="success" onClick={() => handleResolve(s.id)}
                       icon={<Check className="w-3 h-3" />}>
                       Resolver
