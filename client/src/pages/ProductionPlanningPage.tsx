@@ -235,7 +235,7 @@ export default function ProductionPlanningPage() {
                     <div>
                       <p className="text-foreground font-bold text-sm">{s.product_name}</p>
                       <p className="text-muted-foreground text-xs">
-                        Disponível: {s.available_kg.toFixed(1)} kg • Necessário: {s.required_kg.toFixed(1)} kg
+                        Disponível: {s.available_kg.toFixed(2)} kg • Necessário: {s.required_kg.toFixed(2)} kg
                       </p>
                     </div>
                     <div className="text-right">
