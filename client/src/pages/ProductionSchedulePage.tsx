@@ -147,7 +147,7 @@ export default function ProductionSchedulePage() {
                         {s.status === 'confirmed' ? 'Confirmada' : 'Planejada'}
                       </span>
                       <p className={`text-xs mt-1 font-bold ${capacityUsage > 100 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {capacityUsage.toFixed(0)}% capacidade
+                        {capacityUsage.toFixed(2)}% capacidade
                       </p>
                     </div>
                   </div>
