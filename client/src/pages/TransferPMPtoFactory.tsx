@@ -191,7 +191,7 @@ export default function TransferPMPtoFactory() {
                   <div className="bg-secondary rounded-lg p-3 border border-border mt-3">
                     <p className="text-foreground text-sm font-bold">Resumo da Transferência</p>
                     <p className="text-muted-foreground text-xs mt-1">
-                      {selectedBags.length} sacas • <span className="text-primary font-bold">{totalKg.toFixed(1)} kg total</span>
+                      {selectedBags.length} sacas • <span className="text-primary font-bold">{totalKg.toFixed(2)} kg total</span>
                     </p>
                   </div>
                 )}
