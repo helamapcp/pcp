@@ -448,7 +448,7 @@ export default function TransferCDtoPCP() {
 
                 {qty > 0 && (
                   <p className="text-muted-foreground text-xs text-center">
-                    Total: {sentKg.toFixed(1)} kg
+                    Total: {sentKg.toFixed(2)} kg
                     {product?.package_type === 'sealed_bag' && item.requested_unit === 'units' && (
                       <span className="text-primary"> ({qty} × {product.package_weight}kg)</span>
                     )}
