@@ -289,7 +289,7 @@ export default function TransferCDtoPCP() {
                   </div>
                   <div className="text-right">
                     <p className="text-muted-foreground text-xs">CD disponível</p>
-                    <p className="text-foreground font-bold">{Number(cdStock?.total_kg || 0).toFixed(1)} kg</p>
+                    <p className="text-foreground font-bold">{Number(cdStock?.total_kg || 0).toFixed(2)} kg</p>
                   </div>
                 </div>
 
